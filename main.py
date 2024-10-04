@@ -1,14 +1,13 @@
-from fastapi import FastAPI, HTTPException
-from datetime import datetime, timezone
-from typing import List, Dict, Union
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from services.chat_service import ChatService
+from repository.chat_repository import ChatRepository
 from models.requests import MessageRequest
-
 
 app = FastAPI()
 
-chats_db: Dict[int, List[Dict[str, Union[str, int, datetime]]]] = {}
-chat_counter = 1
-
+# Predefined responses for common queries
 predefined_responses = {
     "hello": "Hello! How can I assist you today?",
     "what is your name?": "I am a simple chatbot created to assist you.",
@@ -16,75 +15,47 @@ predefined_responses = {
     "bye": "Goodbye! Have a great day!",
 }
 
-def create_interaction(message: Union[str, None], response: str, index: int):
-    return {
-        "index": index,
-        "message": message,
-        "response": response,
-        "timestamp": datetime.now(timezone.utc),
-    }
+# Dependency to get the database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Instantiate the service layer
+chat_repository = ChatRepository()
+chat_service = ChatService(chat_repository)
 
 @app.get("/chat/init")
-async def create_chat():
-    global chat_counter
-    chat_id = chat_counter
-    chat_counter += 1
-
-    greeting = predefined_responses["hello"]
-    interaction = create_interaction(message=None, response=greeting, index=0)
-    chats_db[chat_id] = [interaction]
-
+async def create_chat(db: Session = Depends(get_db)):
+    chat_id, interaction = chat_service.create_chat(db, predefined_responses)
     return {"chat_id": chat_id, "interaction": interaction}
 
 @app.get("/chat/{chat_id}")
-async def get_chat_interactions(chat_id: int):
-    if chat_id not in chats_db:
+async def get_chat_interactions(chat_id: str, db: Session = Depends(get_db)):
+    chat_data = chat_repository.load_chat_from_db(chat_id, db)
+    if chat_data is None:
         raise HTTPException(status_code=404, detail="Chat ID not found")
-
-    return {"chat_id": chat_id, "interactions": chats_db[chat_id]}
+    return {"chat_id": chat_id, "interactions": chat_data}
 
 @app.post("/chat/{chat_id}/message")
-async def add_message(chat_id: int, message: MessageRequest):
-    if chat_id not in chats_db:
+async def add_message(chat_id: str, message: MessageRequest, db: Session = Depends(get_db)):
+    interaction = chat_service.add_message(chat_id, message.message, db, predefined_responses)
+    if interaction is None:
         raise HTTPException(status_code=404, detail="Chat ID not found")
-
-    user_message = message.message.strip().lower()
-
-    response = predefined_responses.get(user_message, "Sorry, I don't understand that. Can you ask something else?")
-    
-    new_index = len(chats_db[chat_id])
-    interaction = create_interaction(message=message.message, response=response, index=new_index)
-
-    chats_db[chat_id].append(interaction)
-
     return {"chat_id": chat_id, "interaction": interaction}
 
 @app.patch("/chat/{chat_id}/message/{index}")
-async def edit_message(chat_id: int, index: int, message: MessageRequest):
-    if chat_id not in chats_db:
-        raise HTTPException(status_code=404, detail="Chat ID not found")
-
-    if index >= len(chats_db[chat_id]):
-        raise HTTPException(status_code=404, detail="Interaction index not found")
-
-    user_message = message.message.strip().lower()
-    response = predefined_responses.get(user_message, "Sorry, I don't understand that. Can you ask something else?")
-    
-    chats_db[chat_id][index] = create_interaction(message=message.message, response=response, index=index)
-
-    chats_db[chat_id] = chats_db[chat_id][:index + 1]
-
-    return {"chat_id": chat_id, "interaction": chats_db[chat_id][index]}
+async def edit_message(chat_id: str, index: int, message: MessageRequest, db: Session = Depends(get_db)):
+    interaction = chat_service.edit_message(chat_id, index, message.message, db, predefined_responses)
+    if interaction is None:
+        raise HTTPException(status_code=404, detail="Interaction not found")
+    return {"chat_id": chat_id, "interaction": interaction}
 
 @app.delete("/chat/{chat_id}/message/{index}")
-async def delete_message(chat_id: int, index: int):
-    if chat_id not in chats_db:
-        raise HTTPException(status_code=404, detail="Chat ID not found")
-
-    if index >= len(chats_db[chat_id]):
-        raise HTTPException(status_code=404, detail="Interaction index not found")
-
-    chats_db[chat_id] = chats_db[chat_id][:index]
-
-    return {"chat_id": chat_id, "remaining_interactions": chats_db[chat_id]}
-
+async def delete_message(chat_id: str, index: int, db: Session = Depends(get_db)):
+    remaining_interactions = chat_service.delete_message(chat_id, index, db)
+    if remaining_interactions is None:
+        raise HTTPException(status_code=404, detail="Interaction not found")
+    return {"chat_id": chat_id, "remaining_interactions": remaining_interactions}
