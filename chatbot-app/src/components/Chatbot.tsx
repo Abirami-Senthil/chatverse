@@ -8,6 +8,14 @@ interface ChatbotProps {
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ isOpen, toggleChat }) => {
+  const [chatWindowRendered, setChatWindowRendered] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && !chatWindowRendered) {
+      setChatWindowRendered(true);
+    }
+  }, [isOpen]);
+
   return (
     <div className="fixed bottom-5 right-5 z-50">
       {!isOpen && (
@@ -18,7 +26,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ isOpen, toggleChat }) => {
           <FiMessageCircle size={24} />
         </button>
       )}
-      {isOpen && <ChatWindow toggleChat={toggleChat} />}
+      {chatWindowRendered && (
+        <div style={{ display: isOpen ? 'block' : 'none' }}>
+          <ChatWindow toggleChat={toggleChat} />
+        </div>
+      )}
     </div>
   );
 };

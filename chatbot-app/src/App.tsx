@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Chatbot from './components/Chatbot';
-// import './App.css';
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
