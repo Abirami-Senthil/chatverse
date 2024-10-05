@@ -84,49 +84,51 @@ class ChatRepository:
         return interaction
 
     @staticmethod
-    def edit_message(chat_id: str, index: int, message: str, response: str, db: Session):
+    def edit_message_by_id(chat_id: str, interaction_id: str, new_message: str, response: str, db: Session):
         if chat_id not in chat_cache:
             chat_data = ChatRepository.load_chat_from_db(chat_id, db)
             if chat_data is None:
                 return None
 
-        if index >= len(chat_cache[chat_id]):
+        # Find the interaction by interaction_id
+        interaction_index = next((i for i, item in enumerate(chat_cache[chat_id]) if item['interaction_id'] == interaction_id), None)
+        if interaction_index is None:
             return None
 
-        interaction_id = chat_cache[chat_id][index]['interaction_id']
-
         # Update the interaction in cache
-        chat_cache[chat_id][index] = ChatRepository.create_interaction(message=message, response=response, interaction_id=interaction_id, index=index)
+        chat_cache[chat_id][interaction_index] = ChatRepository.create_interaction(message=new_message, response=response, interaction_id=interaction_id, index=interaction_index)
 
         # Update the interaction in SQLite database
-        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.index == index).update({
-            "message": message,
+        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.id == interaction_id).update({
+            "message": new_message,
             "response": response
         })
         db.commit()
 
         # Remove all interactions after the edited one in cache and database
-        chat_cache[chat_id] = chat_cache[chat_id][:index + 1]
-        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.index > index).delete()
+        chat_cache[chat_id] = chat_cache[chat_id][:interaction_index + 1]
+        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.index > interaction_index).delete()
         db.commit()
 
-        return chat_cache[chat_id][index]
+        return chat_cache[chat_id][interaction_index]
 
     @staticmethod
-    def delete_message(chat_id: str, index: int, db: Session):
+    def delete_message_by_id(chat_id: str, interaction_id: str, db: Session):
         if chat_id not in chat_cache:
             chat_data = ChatRepository.load_chat_from_db(chat_id, db)
             if chat_data is None:
                 return None
 
-        if index >= len(chat_cache[chat_id]):
+        # Find the interaction by interaction_id
+        interaction_index = next((i for i, item in enumerate(chat_cache[chat_id]) if item['interaction_id'] == interaction_id), None)
+        if interaction_index is None:
             return None
 
         # Delete the interaction and all subsequent messages from cache
-        chat_cache[chat_id] = chat_cache[chat_id][:index]
+        chat_cache[chat_id] = chat_cache[chat_id][:interaction_index]
 
         # Delete the interactions from the SQLite database
-        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.index >= index).delete()
+        db.query(Interaction).filter(Interaction.chat_id == chat_id, Interaction.index >= interaction_index).delete()
         db.commit()
 
         return chat_cache[chat_id]

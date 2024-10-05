@@ -1,8 +1,6 @@
 from sqlalchemy import create_engine, Column, String, Text, DateTime, Integer
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-import uuid
+from sqlalchemy.orm import sessionmaker, declarative_base
+from datetime import datetime, timezone
 
 from utils.uuid_utis import create_uuid
 
@@ -22,7 +20,7 @@ class Interaction(Base):
     index = Column(Integer)  # Index of the interaction in the chat
     message = Column(Text)
     response = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)

@@ -15,10 +15,10 @@ class ChatService:
         response = predefined_responses.get(user_message, "Sorry, I don't understand that. Can you ask something else?")
         return self.chat_repo.add_message(chat_id, message, response, db)
 
-    def edit_message(self, chat_id: str, index: int, message: str, db: Session, predefined_responses: dict):
-        user_message = message.strip().lower()
+    def edit_message_by_id(self, chat_id: str, interaction_id: str, new_message: str, db: Session, predefined_responses: dict):
+        user_message = new_message.strip().lower()
         response = predefined_responses.get(user_message, "Sorry, I don't understand that. Can you ask something else?")
-        return self.chat_repo.edit_message(chat_id, index, message, response, db)
+        return self.chat_repo.edit_message_by_id(chat_id, interaction_id, new_message, response, db)
 
-    def delete_message(self, chat_id: str, index: int, db: Session):
-        return self.chat_repo.delete_message(chat_id, index, db)
+    def delete_message_by_id(self, chat_id: str, interaction_id: str, db: Session):
+        return self.chat_repo.delete_message_by_id(chat_id, interaction_id, db)
