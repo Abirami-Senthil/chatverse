@@ -1,5 +1,7 @@
-"fastapi[all]"
+fastapi[all]
 python-multipart
 sqlalchemy
 pytest
 requests
+passlib
+fastapi_jwt_auth
