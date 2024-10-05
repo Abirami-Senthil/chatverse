@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiEdit2, FiTrash2, FiCheck, FiSend } from 'react-icons/fi';
+import { FiX, FiEdit2, FiTrash2, FiCheck, FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import { BiDockLeft, BiDockRight } from "react-icons/bi";
 import { ChatController } from '../controllers/ChatController';
 import './ChatWindow.css';
 
@@ -15,6 +16,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     >([]);
     const [input, setInput] = useState('');
     const [isEditing, setIsEditing] = useState<{ index: number | null; text: string; interactionId: string }>({ index: null, text: '', interactionId: "" });
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isPinned, setIsPinned] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -120,9 +123,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         }
     };
 
+    const toggleResize = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    const togglePin = () => {
+        setIsPinned(!isPinned);
+    };
+
     return (
-        <div className="w-96 h-[600px] bg-white rounded-lg shadow-2xl fixed bottom-20 right-5 flex flex-col">
-            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-t-lg">
+        <div className={`${isExpanded ? 'w-[600px] h-[800px]' : 'w-96 h-[600px]'} ${isPinned ? 'fixed bottom-20 left-5' : 'fixed bottom-20 right-5'} bg-white rounded-lg shadow-2xl flex flex-col`}>
+            <div className="flex flex-col items-center justify-center p-4 mt-3 mr-2 ml-2 bg-white rounded-t-lg relative">
                 <img
                     src="/images/abi.jpg"
                     alt="avatar"
@@ -131,6 +142,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                 <div className="text-center">
                     <h4 className="text-sm font-bold">Hey 👋, I'm Abi</h4>
                     <p className="text-xs text-gray-500">Ask me anything or pick a place to start</p>
+                </div>
+                <div className="absolute top-2 left-2 flex space-x-2">
+                    <button onClick={toggleResize} className="text-gray-500 hover:text-gray-800">
+                        {isExpanded ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+                    </button>
+                    <button onClick={togglePin} className="text-gray-500 hover:text-gray-800">
+                        {isPinned ? <BiDockRight size={16} /> : <BiDockLeft size={16} />}
+                    </button>
                 </div>
                 <button className="text-gray-500 absolute top-2 right-2" onClick={toggleChat}>
                     <FiX size={20} />
