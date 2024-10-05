@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
 class AuthSettings(BaseModel):
     """
     AuthSettings represents the authentication configuration.
@@ -13,8 +14,10 @@ class AuthSettings(BaseModel):
         secret_key (str): The secret key used for JWT encoding/decoding.
         algorithm (str): The algorithm used for JWT encoding/decoding.
     """
+
     secret_key: str = Field(..., description="Secret key for JWT")
     algorithm: str = Field(default="HS256", description="Algorithm for JWT")
+
 
 def get_auth_settings() -> AuthSettings:
     """
@@ -29,8 +32,9 @@ def get_auth_settings() -> AuthSettings:
     secret_key = os.getenv("JWT_SECRET_KEY")
     if not secret_key:
         raise ValueError("JWT_SECRET_KEY must be set in the environment")
-    
+
     return AuthSettings(secret_key=secret_key)
+
 
 # Initialize auth settings
 auth_settings = get_auth_settings()
