@@ -1,0 +1,9 @@
+/* ChatWindow.css */
+.custom-resize {
+    resize: both;
+    overflow: auto;
+}
+
+.custom-resize::-webkit-resizer {
+    display: none;
+}
