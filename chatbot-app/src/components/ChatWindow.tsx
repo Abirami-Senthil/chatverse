@@ -150,7 +150,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                             />
                         )}
                         {message.sender === 'user' && message.interactionId && (
-                            <div className="flex space-x-1 mr-2 mt-2 opacity-0 group-hover:opacity-100">
+                            <div className={`flex space-x-1 mr-2 mt-2 ${isEditing.index !== null ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
                                 <button
                                     onClick={() => handleEditClick(index, message.interactionId)}
                                     className="text-black hover:text-gray-800 rounded-full px-0.5"
@@ -166,15 +166,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                             </div>
                         )}
                         <div
-                            className={`inline-block px-4 py-3 relative ${message.sender === 'user' ? 'max-w-[75%] text-left' : 'max-w-full'} break-words ${message.sender === 'user' ? 'bg-custom-purple text-white rounded-b-3xl rounded-tl-3xl' : 'bg-gray-50'}`}
+                            className={`inline-block px-4 py-3 relative ${message.sender === 'user' ? 'max-w-[75%] text-left' : 'max-w-full'} break-words ${message.sender === 'user' ? (isEditing.index === index ? 'bg-purple-300 text-white rounded-b-3xl rounded-tl-3xl' : 'bg-custom-purple text-white rounded-b-3xl rounded-tl-3xl') : 'bg-gray-50'}`}
                         >
                             {isEditing.index === index ? (
-                                <textarea
-                                    value={isEditing.text}
-                                    onChange={(e) => setIsEditing({ ...isEditing, text: e.target.value })}
-                                    className="w-full break-words p-1 border rounded text-sm"
-                                    disabled
-                                />
+                                <p className="break-words text-sm">{isEditing.text}</p>
                             ) : (
                                 <p className="pr-8 break-words text-sm">{message.text}</p>
                             )}
