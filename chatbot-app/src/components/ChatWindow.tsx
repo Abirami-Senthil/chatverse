@@ -138,7 +138,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             </div>
             <div className="flex-1 p-4 overflow-y-auto">
                 {messages.map((message, index) => (
-                    <div key={index} className={`mb-2 flex items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                        key={index}
+                        className={`mb-2 flex items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'} group`}
+                    >
                         {message.sender === 'bot' && (
                             <img
                                 src="/images/abi.jpg"
@@ -146,7 +149,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                                 className="w-10 h-10 rounded-full mr-2"
                             />
                         )}
-                        <div className={`inline-block px-4 py-3 relative ${message.sender === 'user' ? 'max-w-[75%] text-left' : 'max-w-full'} break-words ${message.sender === 'user' ? 'bg-custom-purple text-white rounded-b-3xl rounded-tl-3xl' : 'bg-gray-50'}`}>
+                        {message.sender === 'user' && message.interactionId && (
+                            <div className="flex space-x-1 mr-2 mt-2 opacity-0 group-hover:opacity-100">
+                                <button
+                                    onClick={() => handleEditClick(index, message.interactionId)}
+                                    className="text-black hover:text-gray-800 rounded-full px-0.5"
+                                >
+                                    <FiEdit2 size={16} />
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteClick(message.interactionId)}
+                                    className="text-red-500 hover:text-red-800 rounded-full px-0.5"
+                                >
+                                    <FiTrash2 size={16} />
+                                </button>
+                            </div>
+                        )}
+                        <div
+                            className={`inline-block px-4 py-3 relative ${message.sender === 'user' ? 'max-w-[75%] text-left' : 'max-w-full'} break-words ${message.sender === 'user' ? 'bg-custom-purple text-white rounded-b-3xl rounded-tl-3xl' : 'bg-gray-50'}`}
+                        >
                             {isEditing.index === index ? (
                                 <textarea
                                     value={isEditing.text}
@@ -156,16 +177,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                                 />
                             ) : (
                                 <p className="pr-8 break-words text-sm">{message.text}</p>
-                            )}
-                            {message.sender === 'user' && message.interactionId && (
-                                <div className="absolute top-0 right-1 mt-1 flex space-x-0.5 z-10">
-                                    <button onClick={() => handleEditClick(index, message.interactionId)} className="text-black hover:text-gray-800 rounded-full px-0.5">
-                                        <FiEdit2 size={14} />
-                                    </button>
-                                    <button onClick={() => handleDeleteClick(message.interactionId)} className="text-red-500 hover:text-red-800 rounded-full px-0.5">
-                                        <FiTrash2 size={14} />
-                                    </button>
-                                </div>
                             )}
                         </div>
                     </div>
@@ -200,7 +211,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                     />
                 </div>
                 {isEditing.index !== null ? (
-                    <div className="flex justify-end mt-2 space-x-2 pr-2 pb-2">
+                    <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">
                         <button
                             onClick={() => setIsEditing({ index: null, text: '', interactionId: '' })}
                             className="text-red-600 text-xs"
@@ -215,7 +226,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                         </button>
                     </div>
                 ) : (
-                    <div className="flex justify-end mt-2 pr-2 pb-2">
+                    <div className="flex justify-end mt-2 pr-4 pb-4">
                         <button
                             onClick={sendMessage}
                             className="text-gray-500 text-xs rotate-45"
