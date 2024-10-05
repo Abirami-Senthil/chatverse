@@ -1,0 +1,5 @@
+"fastapi[all]"
+python-multipart
+sqlalchemy
+pytest
+requests
