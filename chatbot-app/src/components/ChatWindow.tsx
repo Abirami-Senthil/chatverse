@@ -5,6 +5,7 @@ import { ChatController } from '../controllers/ChatController';
 import AuthForm from './AuthForm';
 import './ChatWindow.css';
 import { ChatInfo } from '../types/api';
+import { ApiService } from '../services/ApiService';
 
 interface ChatWindowProps {
   toggleChat: () => void;
@@ -44,6 +45,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         }
       };
       fetchChats();
+    } else {
+      const authToken = localStorage.getItem('authToken');
+      if (authToken) {
+        ApiService.initialize(authToken);
+        setIsAuthenticated(true);
+      }
     }
   }, [isAuthenticated]);
 
@@ -95,7 +102,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
 
   const handleAuthSuccess = (token: string) => {
     setIsAuthenticated(true);
-    // Optionally store the token if needed for later use
+    localStorage.setItem('authToken', token);
   };
 
   const sendMessage = async () => {

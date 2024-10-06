@@ -1,15 +1,15 @@
 interface AuthResponse {
-    access_token: string;
-    token_type: string;
-  }
+  access_token: string;
+  token_type: string;
+}
 
 interface AuthError {
-    errors: FieldError[]
+  errors: FieldError[]
 }
 
 interface FieldError {
   name: string,
-  errorMesage: string
+  errorMessage: string
 }
 
 export type {

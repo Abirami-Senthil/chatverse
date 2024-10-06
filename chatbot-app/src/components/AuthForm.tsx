@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ApiService } from '../services/ApiService';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+import { AuthError } from '../types/api';
 
 interface AuthFormProps {
   onAuthSuccess: (token: string) => void;
@@ -26,13 +27,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
       } else {
         response = await ApiService.register(username, password);
       }
-      
+
       if (response) {
         onAuthSuccess(response.access_token);
       }
     } catch (error) {
       const e = error as Error;
-      setError(e.message);
+      try {
+        const authError = JSON.parse(e.message) as AuthError;
+      } catch {
+        setError(e.message);
+      }
     }
   };
 

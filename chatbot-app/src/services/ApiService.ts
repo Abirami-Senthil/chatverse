@@ -47,7 +47,7 @@ const handleAuthErrors = (error: any): void => {
     const errorDetail = error.response.data.detail;
     if (Array.isArray(errorDetail)) {
       const errorMessage: FieldError[] = errorDetail.map((err: any) => { return { name: err.loc[err.loc.length - 1], errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}` } });
-      throw new Error(errorMessage);
+      throw new Error(JSON.stringify(errorMessage));
     } else {
       throw new Error(errorDetail);
     }
@@ -75,6 +75,16 @@ export const ApiService = {
       handleAuthErrors(error);
     }
   },
+
+  /**
+   * Initializes an axios instance using the provided token.
+   * @param {string} token - The token to be used for authentication.
+   * @returns {void}
+   */
+  initialize: (token: string): void => {
+    axiosInstance = createAxiosInstance(token);
+  },
+
 
   createChat: async (chatName: string): Promise<ApiResponse<CreateChatResponse>> => {
     try {
