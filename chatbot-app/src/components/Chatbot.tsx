@@ -11,10 +11,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isOpen, toggleChat }) => {
   const [chatWindowRendered, setChatWindowRendered] = useState(false);
 
   useEffect(() => {
-    if (isOpen && !chatWindowRendered) {
-      setChatWindowRendered(true);
+    try {
+      if (isOpen && !chatWindowRendered) {
+        setChatWindowRendered(true);
+      }
+    } catch (error) {
+      console.error('Error rendering chat window:', error);
     }
-  }, [isOpen]);
+  }, [isOpen, chatWindowRendered]);
 
   return (
     <div className="fixed bottom-5 right-5 z-50">

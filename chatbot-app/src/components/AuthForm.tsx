@@ -14,6 +14,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   const [error, setError] = useState<AuthError | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  /**
+   * Handles form submission for login or registration.
+   */
   const handleSubmit = async () => {
     if (username.trim() === '' || password.trim() === '') {
       setError({ errors: [{ errorMessage: 'Username and password cannot be empty' }] });
@@ -21,27 +24,35 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     }
 
     try {
-      let response;
-      if (isLogin) {
-        response = await ApiService.login(username, password);
-      } else {
-        response = await ApiService.register(username, password);
-      }
+      const response = isLogin
+        ? await ApiService.login(username, password)
+        : await ApiService.register(username, password);
 
       if (response) {
         onAuthSuccess(response.access_token);
       }
     } catch (error) {
-      const e = error as Error;
-      try {
-        const authError = JSON.parse(e.message) as AuthError;
-        setError(authError);
-      } catch {
-        setError({ errors: [{ errorMessage: e.message }] });
-      }
+      handleError(error);
     }
   };
 
+  /**
+   * Handles errors by parsing the error message and setting the error state.
+   * @param error - The error object thrown during API call.
+   */
+  const handleError = (error: unknown) => {
+    const e = error as Error;
+    try {
+      const authError = JSON.parse(e.message) as AuthError;
+      setError(authError);
+    } catch {
+      setError({ errors: [{ errorMessage: e.message }] });
+    }
+  };
+
+  /**
+   * Toggles between login and registration mode.
+   */
   const handleToggleLogin = () => {
     setIsLogin(!isLogin);
     setUsername('');
@@ -49,6 +60,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     setError(null);
   };
 
+  /**
+   * Handles the Enter key press event to submit the form.
+   * @param e - The keyboard event.
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSubmit();
@@ -64,7 +79,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           className="w-16 h-16 rounded-full"
         />
       </div>
-      <h2 className="text-lg font-bold mb-4 text-center">Hey there, I'm Abi! {isLogin ? "Login to get started" : "Let's get you registered"}</h2>
+      <h2 className="text-lg font-bold mb-4 text-center">
+        Hey there, I'm Abi! {isLogin ? "Login to get started" : "Let's get you registered"}
+      </h2>
       <input
         type="text"
         placeholder="Username"
@@ -73,7 +90,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         onKeyDown={handleKeyDown}
         className="w-full mb-2 p-2 border border-gray-300 rounded-xl"
       />
-      {error && error?.errors.map((error, index) => (
+      {error && error.errors.map((error, index) => (
         error.name === 'username' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
       ))}
       <div className="relative">
@@ -93,9 +110,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           {showPassword ? <AiOutlineEyeInvisible className="align-middle" /> : <AiOutlineEye className="align-middle" />}
         </button>
       </div>
-      {error && error?.errors.map((error, index) => (
-          error.name === undefined || error.name === 'password' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
-        ))}
+      {error && error.errors.map((error, index) => (
+        error.name === undefined || error.name === 'password' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
+      ))}
       <button
         onClick={handleSubmit}
         className="w-full mb-6 p-2 bg-custom-purple text-white rounded-xl"

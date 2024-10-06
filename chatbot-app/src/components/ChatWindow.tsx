@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiEdit2, FiTrash2, FiCheck, FiSend, FiMaximize2, FiMinimize2, FiPlus } from 'react-icons/fi';
-import { BiDockLeft, BiDockRight } from "react-icons/bi";
-import { RiChatNewLine } from "react-icons/ri";
 import { ChatController } from '../controllers/ChatController';
 import AuthForm from './AuthForm';
 import './ChatWindow.css';
 import { ChatInfo } from '../types/api';
 import { ApiService } from '../services/ApiService';
+import { ChatHeader } from './ChatHeader';
+import { ChatMessages } from './ChatMessages';
+import { ChatInputArea } from './ChatInputArea';
 
 interface ChatWindowProps {
   toggleChat: () => void;
@@ -240,192 +240,41 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
 
   return (
     <div className={`${isExpanded ? 'w-[600px] h-[800px]' : 'w-96 h-[600px]'} ${isPinned ? 'fixed bottom-20 left-5' : 'fixed bottom-20 right-5'} bg-white rounded-lg shadow-2xl flex flex-col`}>
-      <div className="flex flex-col items-center justify-center p-4 mt-3 mr-2 ml-2 bg-white rounded-t-lg relative">
-        <img
-          src="/images/abi.jpg"
-          alt="avatar"
-          className="w-10 h-10 rounded-full mb-2"
-        />
-        <div className="text-center">
-          <h4 className="text-sm font-bold">Hey 👋, I'm Abi</h4>
-          <p className="text-xs text-gray-500">Ask me anything or pick a place to start</p>
-        </div>
-        <div className="absolute top-2 left-2 flex space-x-2">
-          <button onClick={toggleResize} className="text-gray-500 hover:text-gray-800">
-            {isExpanded ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
-          </button>
-          <button onClick={togglePin} className="text-gray-500 hover:text-gray-800">
-            {isPinned ? <BiDockRight size={16} /> : <BiDockLeft size={16} />}
-          </button>
-        </div>
-        <button className="text-gray-500 absolute top-2 right-2" onClick={toggleChat}>
-          <FiX size={20} />
-        </button>
-      </div>
-      <div className="flex-1 p-4 overflow-y-auto">
-        {messages.map((message, index: number) => (
-          <div key={index} className={`mb-2 flex items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'} group`}>
-            {message.sender === 'bot' && (
-              <img
-                src="/images/abi.jpg"
-                alt="avatar"
-                className="w-10 h-10 rounded-full mr-2"
-              />
-            )}
-            {message.sender === 'user' && message.interactionId && (
-              <div className={`flex space-x-1 mr-2 mt-2 ${isEditing.index !== null ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}>
-                <button
-                  onClick={() => handleEditClick(index, message.interactionId)}
-                  className="text-black hover:text-gray-800 rounded-full px-0.5"
-                >
-                  <FiEdit2 size={16} />
-                </button>
-                <button
-                  onClick={() => handleDeleteClick(message.interactionId)}
-                  className="text-red-500 hover:text-red-800 rounded-full px-0.5"
-                >
-                  <FiTrash2 size={16} />
-                </button>
-              </div>
-            )}
-            <div
-              className={`inline-block px-4 py-3 relative ${message.sender === 'user' ? 'max-w-[75%] text-left' : 'max-w-full'} break-words ${message.sender === 'user' ? (isEditing.index === index ? 'bg-purple-300 text-white rounded-b-3xl rounded-tl-3xl' : 'bg-custom-purple text-white rounded-b-3xl rounded-tl-3xl') : 'bg-gray-50'}`}
-            >
-              {isEditing.index === index ? (
-                <p className="break-words text-sm">{isEditing.text}</p>
-              ) : (
-                <p className="pr-8 break-words text-sm">{message.text}</p>
-              )}
-              {message.sender === 'bot' && index === messages.length - 1 && message.suggestions.length > 0 && (
-                <div className="mt-2">
-                  {message.suggestions.map((suggestion, suggestionIndex) => (
-                    <button
-                      key={suggestionIndex}
-                      onClick={() => {
-                        setInput(suggestion);
-                        sendMessage(suggestion);
-                      }}
-                      className="bg-white border border-custom-purple text-custom-purple px-4 py-1 rounded-3xl mb-2 max-w-[75%] block"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      <ChatHeader
+        isExpanded={isExpanded}
+        toggleResize={toggleResize}
+        isPinned={isPinned}
+        togglePin={togglePin}
+        toggleChat={toggleChat}
+      />
+      <ChatMessages
+        messages={messages}
+        handleEditClick={handleEditClick}
+        handleDeleteClick={handleDeleteClick}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        setInput={setInput}
+        sendMessage={sendMessage}
+        messagesEndRef={messagesEndRef}
+      />
       <div className="border-t border-gray-200 mx-4"></div>
-      <div className="p-4">
-        {!showCreateChat && (<div className="relative flex items-center">
-          <img
-            src="/images/userIcon.jpg"
-            alt="avatar"
-            className="w-6 h-6 rounded-full mr-2"
-          />
-          <textarea
-            id="chat-input-field"
-            value={isEditing.index !== null ? isEditing.text : input}
-            onChange={(e) => (isEditing.index !== null ? setIsEditing({ ...isEditing, text: e.target.value }) : setInput(e.target.value))}
-            placeholder={selectedChat === '' ? "Select or create a new chat" : "Your question"}
-            disabled={selectedChat === ''}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (isEditing.index !== null) {
-                  handleEditSave();
-                } else {
-                  sendMessage();
-                }
-              }
-            }}
-            className="w-full px-3 py-2 pr-14 border border-transparent rounded-md focus:outline-none resize-none overflow-auto"
-            rows={2}
-          />
-        </div>)}
-        {isEditing.index !== null ? (
-          <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">
-            <button
-              onClick={() => setIsEditing({ index: null, text: '', interactionId: '' })}
-              className="text-red-600 text-xs"
-            >
-              <FiX size={24} />
-            </button>
-            <button
-              onClick={handleEditSave}
-              className="text-green-600 text-xs"
-            >
-              <FiCheck size={24} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex mt-2 pr-4 pb-4">
-            {!showCreateChat && <><select
-              value={selectedChat}
-              onChange={handleChatSelect}
-              className="mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
-            >
-              <option value="" disabled>Select a chat</option>
-              {chats.map((chat) => (
-                <option key={chat.chat_id} value={chat.chat_id}>
-                  {chat.chat_name}
-                </option>
-              ))}
-            </select>
-              <button
-                onClick={() => setShowCreateChat(true)}
-                className="text-blue-600 text-xs ml-1"
-              >
-                <RiChatNewLine size={24} />
-              </button>
-              <button
-                onClick={() => sendMessage()}
-                className="text-gray-500 text-xs rotate-45 ml-auto"
-              >
-                <FiSend size={24} />
-              </button>
-            </>}
-            {showCreateChat && (
-              <div className="w-full flex flex-row mt-2">
-                <input
-                  type="text"
-                  value={newChatName}
-                  onChange={(e) => setNewChatName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleCreateChat();
-                    }
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      cancelCreateChat();
-                    }
-                  }}
-                  placeholder="Enter chat name"
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none w-full"
-                />
-                <div className="flex flex-row justify-end">
-                  <button
-                    onClick={cancelCreateChat}
-                    className="text-red-600 text-xs p-2"
-                  >
-                    <FiX size={24} />
-                  </button>
-                  <button
-                    onClick={handleCreateChat}
-                    className="text-green-600 text-xs p-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
-                    disabled={newChatName.trim() === ''}
-                  >
-                    <FiCheck size={24} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <ChatInputArea
+        input={input}
+        setInput={setInput}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        handleEditSave={handleEditSave}
+        sendMessage={sendMessage}
+        showCreateChat={showCreateChat}
+        setShowCreateChat={setShowCreateChat}
+        chats={chats}
+        selectedChat={selectedChat}
+        handleChatSelect={handleChatSelect}
+        newChatName={newChatName}
+        setNewChatName={setNewChatName}
+        handleCreateChat={handleCreateChat}
+        cancelCreateChat={cancelCreateChat}
+      />
     </div>
   );
 };
