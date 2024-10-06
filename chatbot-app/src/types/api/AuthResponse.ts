@@ -8,7 +8,7 @@ interface AuthError {
 }
 
 interface FieldError {
-  name: string,
+  name?: string,
   errorMessage: string
 }
 

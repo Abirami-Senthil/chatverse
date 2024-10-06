@@ -46,10 +46,12 @@ const handleAuthErrors = (error: any): void => {
   if (axios.isAxiosError(error) && error.response?.data?.detail) {
     const errorDetail = error.response.data.detail;
     if (Array.isArray(errorDetail)) {
-      const errorMessage: FieldError[] = errorDetail.map((err: any) => { return { name: err.loc[err.loc.length - 1], errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}` } });
-      throw new Error(JSON.stringify(errorMessage));
+      const errors: FieldError[] = errorDetail.map((err: any) => { return { name: err.loc[err.loc.length - 1], errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}` } });
+      const authError: AuthError = { errors };
+      throw new Error(JSON.stringify(authError));
     } else {
-      throw new Error(errorDetail);
+      const authError: AuthError = { errors: [{ errorMessage: error.message }] };
+      throw new Error(JSON.stringify(authError));
     }
   }
   throw new Error('Unexpected Error');
