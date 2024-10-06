@@ -105,22 +105,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     localStorage.setItem('authToken', token);
   };
 
-  const sendMessage = async () => {
-    if (input.trim() === '') return;
+  const sendMessage = async (str?: string) => {
+    const messageText = str || input;
+    if (messageText.trim() === '') return;
 
     // Add the user's message to the list
-    setMessages([...messages, { sender: 'user', text: input, interactionId: "", suggestions: [] }]);
+    setMessages([...messages, { sender: 'user', text: messageText, interactionId: "", suggestions: [] }]);
 
     // Get bot response from the server
     setTimeout(async () => {
-      const interaction = await chatController.sendMessage(input);
+      const interaction = await chatController.sendMessage(messageText);
       if (interaction) {
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages];
           // Update the user's message to include the interaction ID from the API response
           updatedMessages[updatedMessages.length - 1] = {
             sender: 'user',
-            text: input,
+            text: messageText,
             interactionId: interaction.interaction_id,
             suggestions: [],
           };
@@ -272,17 +273,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
               ) : (
                 <p className="pr-8 break-words text-sm">{message.text}</p>
               )}
-            </div>
-            <div className="flex space-x-2 mt-2">
-              {index === messages.length - 1 && message.suggestions && message.suggestions.map((suggestion, suggestionIndex) => (
-                <button
-                  key={suggestionIndex}
-                  onClick={() => { setInput(suggestion); setTimeout(sendMessage, 0); }}
-                  className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700"
-                >
-                  {suggestion}
-                </button>
-              ))}
+              {message.sender === 'bot' && index === messages.length - 1 && message.suggestions.length > 0 && (
+                <div className="mt-2">
+                  {message.suggestions.map((suggestion, suggestionIndex) => (
+                    <button
+                      key={suggestionIndex}
+                      onClick={() => { 
+                        setInput(suggestion);
+                        sendMessage(suggestion);
+                      }}
+                      className="bg-white border border-custom-purple text-custom-purple px-4 py-1 rounded-3xl mb-2 max-w-[75%] block"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -345,7 +351,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         ) : (
           <div className="flex justify-end mt-2 pr-4 pb-4">
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               className="text-gray-500 text-xs rotate-45"
             >
               <FiSend size={24} />
