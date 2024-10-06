@@ -319,7 +319,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
       </div>
       <div className="border-t border-gray-200 mx-4"></div>
       <div className="p-4">
-        <div className="relative flex items-center">
+        {!showCreateChat && (<div className="relative flex items-center">
           <img
             src="/images/userIcon.jpg"
             alt="avatar"
@@ -344,7 +344,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             className="w-full px-3 py-2 pr-14 border border-transparent rounded-md focus:outline-none resize-none overflow-auto"
             rows={2}
           />
-        </div>
+        </div>)}
         {isEditing.index !== null ? (
           <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">
             <button
@@ -397,6 +397,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       handleCreateChat();
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      cancelCreateChat();
                     }
                   }}
                   placeholder="Enter chat name"
