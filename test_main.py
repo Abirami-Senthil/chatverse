@@ -89,10 +89,11 @@ def test_add_message(create_chat, create_user_and_get_token):
         f"/chat/{chat_id}/message", json=message_data, headers=headers
     )
     assert response.status_code == 200
-    assert "interaction" in response.json()
-    assert response.json()["interaction"]["message"] == "hello"
-    assert response.json()["interaction"]["response"] == GREETING_RESPONSE
-    assert "suggestions" in response.json()["interaction"]
+    assert "message" in response.json()
+    assert "response" in response.json()
+    assert response.json()["message"] == "hello"
+    assert response.json()["response"] == GREETING_RESPONSE
+    assert "suggestions" in response.json()
 
 
 def test_edit_message(create_chat, create_user_and_get_token):
@@ -104,26 +105,27 @@ def test_edit_message(create_chat, create_user_and_get_token):
         f"/chat/{chat_id}/message", json=message_data_1, headers=headers
     )
     assert response.status_code == 200
-    interaction_id_1 = response.json()["interaction"]["interaction_id"]
+    interaction_id_1 = response.json()["interaction_id"]
 
     message_data_2 = {"message": "how are you?"}
     response = client.post(
         f"/chat/{chat_id}/message", json=message_data_2, headers=headers
     )
     assert response.status_code == 200
-    interaction_id_2 = response.json()["interaction"]["interaction_id"]
+    interaction_id_2 = response.json()["interaction_id"]
 
     edit_data = {"message": "how are you?"}
     response = client.patch(
         f"/chat/{chat_id}/message/{interaction_id_1}", json=edit_data, headers=headers
     )
     assert response.status_code == 200
-    assert response.json()["interaction"]["message"] == "how are you?"
+    remaining_interactions = response.json()
+    assert remaining_interactions[1]["message"] == "how are you?"
     assert (
-        response.json()["interaction"]["response"]
+        remaining_interactions[1]["response"]
         == "I'm doing well! Thanks for asking. How can I assist you today?"
     )
-    assert "suggestions" in response.json()["interaction"]
+    assert "suggestions" in remaining_interactions[-1]
 
     response = client.get(f"/chat/{chat_id}", headers=headers)
     interactions = response.json()["interactions"]
@@ -140,21 +142,21 @@ def test_delete_message(create_chat, create_user_and_get_token):
         f"/chat/{chat_id}/message", json=message_data_1, headers=headers
     )
     assert response.status_code == 200
-    interaction_id_1 = response.json()["interaction"]["interaction_id"]
+    interaction_id_1 = response.json()["interaction_id"]
 
     message_data_2 = {"message": "how are you?"}
     response = client.post(
         f"/chat/{chat_id}/message", json=message_data_2, headers=headers
     )
     assert response.status_code == 200
-    interaction_id_2 = response.json()["interaction"]["interaction_id"]
+    interaction_id_2 = response.json()["interaction_id"]
 
     response = client.delete(
         f"/chat/{chat_id}/message/{interaction_id_1}", headers=headers
     )
     assert response.status_code == 200
 
-    remaining_interactions = response.json()["remaining_interactions"]
+    remaining_interactions = response.json()
     assert len(remaining_interactions) == 1
     assert remaining_interactions[0]["message"] is None
     assert remaining_interactions[0]["response"] == GREETING_RESPONSE

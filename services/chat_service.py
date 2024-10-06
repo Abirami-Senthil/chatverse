@@ -53,7 +53,7 @@ class ChatService:
 
     def edit_message(
         self, interaction_id: str, new_message: str, db: Session
-    ) -> Optional[Dict[str, str]]:
+    ) -> Optional[List[Dict]]:
         """
         Edit a message within a chat.
 
@@ -66,7 +66,8 @@ class ChatService:
             response = self.chat_repo.edit_message(
                 interaction_id, new_message, self.get_response(new_message), db
             )
-            response["suggestions"] = self.get_suggestions()
+            if response is not None and len(response) > 0:
+                response[-1]["suggestions"] = self.get_suggestions()
             return response
         except Exception as e:
             logging.error(f"Error editing message {interaction_id}: {e}")

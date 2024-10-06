@@ -156,7 +156,7 @@ async def add_message(
     interaction = chat_service.add_message(chat_id, message.message, db)
     if interaction is None:
         raise HTTPException(status_code=404, detail="Chat ID not found")
-    return {"chat_id": chat_id, "interaction": interaction}
+    return interaction
 
 
 @app.patch("/chat/{chat_id}/message/{interaction_id}")
@@ -166,16 +166,18 @@ async def edit_message(
     message: MessageRequest,
     db: Session = Depends(get_session_local),
     current_user: User = Depends(get_current_user),
-) -> dict:
+) -> list:
     """Edit a message in a chat."""
     if not chat_service.verify_user_ownership(chat_id, current_user.id):
         raise HTTPException(
             status_code=403, detail="You do not have permission to access this chat."
         )
-    updated_interaction = chat_service.edit_message(interaction_id, message.message, db)
-    if updated_interaction is None:
+    remaining_interactions = chat_service.edit_message(
+        interaction_id, message.message, db
+    )
+    if remaining_interactions is None:
         raise HTTPException(status_code=404, detail="Interaction ID not found")
-    return {"interaction": updated_interaction}
+    return remaining_interactions
 
 
 @app.delete("/chat/{chat_id}/message/{interaction_id}")
@@ -184,7 +186,7 @@ async def delete_message(
     interaction_id: str,
     db: Session = Depends(get_session_local),
     current_user: User = Depends(get_current_user),
-) -> dict:
+) -> list:
     """Delete a message from a chat."""
     if not chat_service.verify_user_ownership(chat_id, current_user.id):
         raise HTTPException(
@@ -193,7 +195,7 @@ async def delete_message(
     remaining_interactions = chat_service.delete_message(interaction_id, db)
     if remaining_interactions is None:
         raise HTTPException(status_code=404, detail="Interaction ID not found")
-    return {"remaining_interactions": remaining_interactions}
+    return remaining_interactions
 
 
 @app.get("/chats")

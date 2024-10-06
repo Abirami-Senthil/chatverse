@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { AuthResponse, ChatInitResponse, ChatMessageResponse, EditMessageResponse, DeleteMessageResponse } from '../types/api';
+import { AuthResponse, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, } from '../types/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -59,40 +59,62 @@ export const ApiService = {
     }
   },
 
-  createChat: async (): Promise<ApiResponse<ChatInitResponse>> => {
+  createChat: async (chatName: string): Promise<ApiResponse<CreateChatResponse>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.get<ChatInitResponse>('/chat/init');
+      const response = await axiosInstance!.get<CreateChatResponse>(`/chat/init`, {
+        params: { chat_name: chatName }
+      });
       return response.data;
     } catch (error) {
       handleApiError(error);
     }
   },
 
-  addMessage: async (chatId: string, message: string): Promise<ApiResponse<ChatMessageResponse>> => {
+  addMessage: async (chatId: string, message: string): Promise<ApiResponse<Interaction>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.post<ChatMessageResponse>(`/chat/${chatId}/message`, { message });
+      const response = await axiosInstance!.post<Interaction>(`/chat/${chatId}/message`, { message });
       return response.data;
     } catch (error) {
       handleApiError(error);
     }
   },
 
-  editMessage: async (chatId: string, interactionId: string, message: string): Promise<ApiResponse<EditMessageResponse>> => {
+  editMessage: async (chatId: string, interactionId: string, message: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.patch<EditMessageResponse>(`/chat/${chatId}/message/${interactionId}`, { message });
+      const response = await axiosInstance!.patch<Interaction[]>(`/chat/${chatId}/message/${interactionId}`, { message });
       return response.data;
     } catch (error) {
       handleApiError(error);
     }
   },
 
-  deleteMessage: async (chatId: string, interactionId: string): Promise<ApiResponse<DeleteMessageResponse>> => {
+  deleteMessage: async (chatId: string, interactionId: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.delete<DeleteMessageResponse>(`/chat/${chatId}/message/${interactionId}`);
+      const response = await axiosInstance!.delete<Interaction[]>(`/chat/${chatId}/message/${interactionId}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  loadChat: async (chatId: string): Promise<ApiResponse<GetChatResponse>> => {
+    try {
+      checkAuthentication();
+      const response = await axiosInstance!.get<GetChatResponse>(`/chat/${chatId}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  listChats: async (): Promise<ApiResponse<ChatInfo[]>> => {
+    try {
+      checkAuthentication();
+      const response = await axiosInstance!.get<ChatInfo[]>('/chats');
       return response.data;
     } catch (error) {
       handleApiError(error);

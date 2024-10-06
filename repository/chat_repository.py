@@ -124,6 +124,8 @@ class ChatRepository:
 
             chat_data = {
                 "user_id": chat.user_id,
+                "chat_name": chat.name,
+                "chat_id": chat_id,
                 "interactions": [
                     {
                         "interaction_id": i.id,
@@ -175,8 +177,6 @@ class ChatRepository:
                 if chat_data is None:
                     return None
 
-            user_message = message.strip().lower()
-
             new_index = len(chat_cache[chat_id]["interactions"])
             interaction_id = str(uuid.uuid4())
             interaction = ChatRepository.create_interaction(
@@ -208,7 +208,7 @@ class ChatRepository:
     @staticmethod
     def edit_message(
         interaction_id: str, new_message: str, new_response: str, db: Session
-    ) -> Optional[Dict]:
+    ) -> Optional[List[Dict]]:
         """
         Edit a message within a chat.
 
@@ -216,7 +216,7 @@ class ChatRepository:
         :param new_message: New message content
         :param db: Database session
         :param response: Response to add
-        :return: Updated interaction
+        :return: Remaining interactions in the chat
         """
         try:
             interaction = (
@@ -246,13 +246,10 @@ class ChatRepository:
                         interactions[i]["response"] = new_response
                         chat_cache[chat_id]["interactions"] = interactions[: i + 1]
                         break
+                return chat_cache[chat_id]["interactions"]
 
-            return {
-                "interaction_id": interaction.id,
-                "message": interaction.message,
-                "response": interaction.response,
-                "timestamp": interaction.timestamp,
-            }
+            chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+            return chat_data["interactions"]
         except SQLAlchemyError as e:
             logging.error(f"Error editing message {interaction_id}: {e}")
             db.rollback()
@@ -287,6 +284,7 @@ class ChatRepository:
                 chat_cache[chat_id]["interactions"] = [
                     i for i in interactions if i["index"] < index_to_delete
                 ]
+                return chat_cache[chat_id]["interactions"]
 
             remaining_interactions = (
                 db.query(Interaction)

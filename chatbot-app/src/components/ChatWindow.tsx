@@ -4,6 +4,7 @@ import { BiDockLeft, BiDockRight } from "react-icons/bi";
 import { ChatController } from '../controllers/ChatController';
 import AuthForm from './AuthForm';
 import './ChatWindow.css';
+import { ChatInfo } from '../types/api';
 
 interface ChatWindowProps {
   toggleChat: () => void;
@@ -13,7 +14,7 @@ const chatController = new ChatController();
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
   const [messages, setMessages] = useState<
-    { sender: string; text: string; interactionId: string }[]
+    { sender: string; text: string; interactionId: string, suggestions: string[] }[]
   >([]);
   const [input, setInput] = useState('');
   const [isEditing, setIsEditing] = useState<{ index: number | null; text: string; interactionId: string }>({ index: null, text: '', interactionId: "" });
@@ -22,16 +23,65 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const [chats, setChats] = useState<ChatInfo[]>([]);
+  const [selectedChat, setSelectedChat] = useState<string>('');
+
   useEffect(() => {
     if (isAuthenticated) {
-      // Create chat when the chatbot is opened
-      const createChat = async () => {
-        const firstInteraction = await chatController.createChat();
-        setMessages([{ sender: 'bot', text: firstInteraction.response, interactionId: firstInteraction.interaction_id }]);
+      const fetchChats = async () => {
+        try {
+          const chatList = await chatController.listChats();
+          if (chatList.length === 0) {
+            const newChat = await chatController.createChat("1");
+            setChats([{ chat_id: newChat.chat_id, chat_name: newChat.chat_name }]);
+            setMessages([{ sender: 'bot', text: newChat.interaction.response, interactionId: newChat.interaction.interaction_id, suggestions: [] }]);
+            setSelectedChat(newChat.chat_id);
+          } else {
+            setChats(chatList);
+          }
+        } catch (error) {
+          console.error('Error fetching chats:', error);
+        }
       };
-      createChat();
+      fetchChats();
     }
   }, [isAuthenticated]);
+
+  const handleChatSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedChat(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchChatMessages = async () => {
+      if (selectedChat) {
+        try {
+          const interactions = await chatController.loadChat(selectedChat);
+          setMessages(interactions.flatMap((interaction: any) => {
+            const expandedMessages = [];
+            if (interaction.message) {
+              expandedMessages.push({
+                sender: 'user',
+                text: interaction.message,
+                interactionId: interaction.interaction_id,
+                suggestions: interaction.suggestions,
+              });
+            }
+            expandedMessages.push({
+              sender: 'bot',
+              text: interaction.response,
+              interactionId: interaction.interaction_id,
+              suggestions: interaction.suggestions,
+            });
+            return expandedMessages;
+          }));
+        } catch (error) {
+          console.error('Error fetching chat messages:', error);
+        }
+      }
+    };
+
+    fetchChatMessages();
+  }, [selectedChat]);
 
   useEffect(() => {
     scrollToBottom();
@@ -52,11 +102,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     if (input.trim() === '') return;
 
     // Add the user's message to the list
-    setMessages([...messages, { sender: 'user', text: input, interactionId: "" }]);
+    setMessages([...messages, { sender: 'user', text: input, interactionId: "", suggestions: [] }]);
 
     // Get bot response from the server
     setTimeout(async () => {
       const interaction = await chatController.sendMessage(input);
+      debugger;
       if (interaction) {
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages];
@@ -65,12 +116,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             sender: 'user',
             text: input,
             interactionId: interaction.interaction_id,
+            suggestions: [],
           };
           // Add the bot's response to the list
           updatedMessages.push({
             sender: 'bot',
             text: interaction.response,
             interactionId: interaction.interaction_id,
+            suggestions: interaction.suggestions,
           });
           return updatedMessages;
         });
@@ -94,16 +147,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
   const handleEditSave = async () => {
     if (isEditing.index === null || !isEditing.interactionId) return;
 
-    const updatedInteraction = await chatController.editMessage(isEditing.interactionId, isEditing.text);
-    if (updatedInteraction) {
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages];
-        updatedMessages[isEditing.index!] = { sender: 'user', text: isEditing.text, interactionId: isEditing.interactionId };
-        updatedMessages[isEditing.index! + 1] = { sender: 'bot', text: updatedInteraction.response, interactionId: updatedInteraction.interaction_id };
-
-        // Remove all messages after the new bot response
-        return updatedMessages.slice(0, isEditing.index! + 2);
-      });
+    const remainingInteractions = await chatController.editMessage(isEditing.interactionId, isEditing.text);
+    if (remainingInteractions) {
+      setMessages(remainingInteractions.flatMap((interaction: any) => {
+        const expandedMessages = [];
+        if (interaction.message) {
+          expandedMessages.push({
+            sender: 'user',
+            text: interaction.message,
+            interactionId: interaction.interaction_id,
+            suggestions: [],
+          });
+        }
+        expandedMessages.push({
+          sender: 'bot',
+          text: interaction.response,
+          interactionId: interaction.interaction_id,
+          suggestions: interaction.suggestions,
+        });
+        return expandedMessages;
+      }));
     }
 
     setIsEditing({ index: null, text: '', interactionId: "" });
@@ -119,12 +182,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             sender: 'user',
             text: interaction.message,
             interactionId: interaction.interaction_id,
+            suggestions: [],
           });
         }
         expandedMessages.push({
           sender: 'bot',
           text: interaction.response,
           interactionId: interaction.interaction_id,
+          suggestions: interaction.suggestions,
         });
         return expandedMessages;
       }));
@@ -168,7 +233,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         </button>
       </div>
       <div className="flex-1 p-4 overflow-y-auto">
-        {messages.map((message, index) => (
+        {messages.map((message, index: number) => (
           <div key={index} className={`mb-2 flex items-start ${message.sender === 'user' ? 'justify-end' : 'justify-start'} group`}>
             {message.sender === 'bot' && (
               <img
@@ -202,6 +267,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                 <p className="pr-8 break-words text-sm">{message.text}</p>
               )}
             </div>
+            <div className="flex space-x-2 mt-2">
+              {message.suggestions.map((suggestion, suggestionIndex) => (
+                <button
+                  key={suggestionIndex}
+                  onClick={() => { setInput(suggestion); sendMessage(); }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -232,6 +308,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             className="w-full px-3 py-2 pr-14 border border-transparent rounded-md focus:outline-none resize-none overflow-auto"
             rows={2}
           />
+          <select
+            value={selectedChat}
+            onChange={handleChatSelect}
+            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+          >
+            <option value="" disabled>Select a chat</option>
+            {chats.map((chat) => (
+              <option key={chat.chat_id} value={chat.chat_id}>
+                {chat.chat_name}
+              </option>
+            ))}
+          </select>
         </div>
         {isEditing.index !== null ? (
           <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">

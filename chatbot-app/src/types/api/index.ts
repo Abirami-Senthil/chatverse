@@ -1,15 +1,15 @@
 import AuthResponse from './AuthResponse';
 import CreateChatResponse from './CreateChatResponse';
-import ChatMessageResponse from './ChatMessageResponse';
-import DeleteMessageResponse from './DeleteMessageResponse';
-import EditMessageResponse from './EditMessageResponse';
 import Interaction from './Interaction';
+import ChatInfo from './ChatInfo';
+import ChatMessageResponse from './ChatMessageResponse';
+import GetChatResponse from './GetChatReponse';
 
 export type {
   AuthResponse,
-  ChatMessageResponse,
-  DeleteMessageResponse,
-  EditMessageResponse,
   Interaction,
-  CreateChatResponse as ChatInitResponse
+  ChatMessageResponse,
+  CreateChatResponse,
+  ChatInfo,
+  GetChatResponse
 };

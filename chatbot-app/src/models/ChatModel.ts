@@ -1,4 +1,6 @@
 import { ApiService } from '../services/ApiService';
+import { CreateChatResponse } from '../types/api';
+import ChatInfo from '../types/api/ChatInfo';
 import Interaction from '../types/api/Interaction';
 import ChatIteraction from '../types/chat/Chat';
 
@@ -13,17 +15,41 @@ export class ChatModel {
    * @returns {Promise<Interaction>} The created chat data.
    * @throws {Error} If chat creation fails.
    */
-  async createChat(): Promise<Interaction> {
+  async createChat(chatName: string): Promise<CreateChatResponse> {
     try {
-      const data = await ApiService.createChat();
+      const data = await ApiService.createChat(chatName);
       if (!data) {
         throw new Error('No data returned from API');
       }
       this.chatId = data.chat_id;
-      return data.interaction;
+      return data;
     } catch (error) {
       console.error('Failed to create chat:', error);
       throw new Error('Failed to create chat');
+    }
+  }
+
+  /**
+   * Loads an existing chat using the chat ID.
+   * @param {string} chatId - The ID of the chat to load.
+   * @returns {Promise<Interaction[]>} The interactions of the loaded chat.
+   * @throws {Error} If loading the chat fails.
+   */
+  async loadChat(chatId: string): Promise<Interaction[]> {
+    try {
+      const data = await ApiService.loadChat(chatId);
+      if (!data) {
+        throw new Error('No data returned from API');
+      }
+      this.chatId = data.chat_id;
+      if (!data) {
+        throw new Error('No data returned from API');
+      }
+      this.chatId = chatId;
+      return data.interactions;
+    } catch (error) {
+      console.error('Failed to load chat:', error);
+      throw new Error('Failed to load chat');
     }
   }
 
@@ -40,7 +66,7 @@ export class ChatModel {
       if (!data) {
         throw new Error('No data returned from API');
       }
-      return data.interaction;
+      return data;
     } catch (error) {
       console.error('Failed to add message:', error);
       throw new Error('Failed to add message');
@@ -54,14 +80,14 @@ export class ChatModel {
    * @returns {Promise<Interaction>} The result of editing the message.
    * @throws {Error} If the chat hasn't been created or if editing the message fails.
    */
-  async editMessage(interactionId: string, message: string): Promise<Interaction> {
+  async editMessage(interactionId: string, message: string): Promise<Interaction[]> {
     this.ensureChatCreated();
     try {
       const data = await ApiService.editMessage(this.chatId!, interactionId, message);
       if (!data) {
         throw new Error('No data returned from API');
       }
-      return data.interaction;
+      return data;
     } catch (error) {
       console.error('Failed to edit message:', error);
       throw new Error('Failed to edit message');
@@ -81,10 +107,28 @@ export class ChatModel {
       if (!data) {
         throw new Error('No data returned from API');
       }
-      return data.remaining_interactions;
+      return data;
     } catch (error) {
       console.error('Failed to delete message:', error);
       throw new Error('Failed to delete message');
+    }
+  }
+
+  /**
+   * Lists all available chats.
+   * @returns {Promise<ChatInfo[]>} The list of available chats.
+   * @throws {Error} If loading the chats fails.
+   */
+  static async listAllChats(): Promise<ChatInfo[]> {
+    try {
+      const data = await ApiService.listChats();
+      if (!data) {
+        throw new Error('No data returned from API');
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to load chats:', error);
+      throw new Error('Failed to load chats');
     }
   }
 
