@@ -49,6 +49,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
     setError(null);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
   return (
     <div className="w-96 p-4 bg-white rounded-lg shadow-2xl">
       <div className="flex justify-center mb-4">
@@ -64,6 +70,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        onKeyDown={handleKeyDown}
         className="w-full mb-2 p-2 border border-gray-300 rounded-xl"
       />
       {error && error?.errors.map((error, index) => (
@@ -75,6 +82,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="w-full mb-2 p-2 border border-gray-300 rounded-xl pr-10"
         />
         <button
@@ -86,8 +94,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         </button>
       </div>
       {error && error?.errors.map((error, index) => (
-        error.name === undefined || error.name === 'password' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
-      ))}
+          error.name === undefined || error.name === 'password' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
+        ))}
       <button
         onClick={handleSubmit}
         className="w-full mb-6 p-2 bg-custom-purple text-white rounded-xl"
