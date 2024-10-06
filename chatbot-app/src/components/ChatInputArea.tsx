@@ -86,18 +86,18 @@ export const ChatInputArea: React.FC<{
                             <select
                                 value={selectedChat}
                                 onChange={handleChatSelect}
-                                className="mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+                                className="mt-2 px-1 py-1 border border-gray-200 rounded-md focus:outline-none text-sm bg-gray-50"
                             >
-                                <option value="" disabled>Select a chat</option>
+                                <option value="" className="text-sm" disabled>Select a chat</option>
                                 {chats.map((chat) => (
-                                    <option key={chat.chat_id} value={chat.chat_id}>
-                                        {chat.chat_name}
+                                    <option key={chat.chat_id} value={chat.chat_id} className="text-sm">
+                                        {chat.chat_name.length > 20 ? `${chat.chat_name.substring(0, 20)}...` : chat.chat_name}
                                     </option>
                                 ))}
                             </select>
                             <button
                                 onClick={() => setShowCreateChat(true)}
-                                className="text-blue-600 text-xs ml-1"
+                                className="text-blue-600 text-xs ml-4 mt-2"
                             >
                                 <RiChatNewLine size={24} />
                             </button>
