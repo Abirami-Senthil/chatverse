@@ -4,4 +4,4 @@ sqlalchemy
 pytest
 requests
 passlib
-fastapi_jwt_auth
+bcrypt
