@@ -50,7 +50,7 @@ const handleAuthErrors = (error: any): void => {
       const authError: AuthError = { errors };
       throw new Error(JSON.stringify(authError));
     } else {
-      const authError: AuthError = { errors: [{ errorMessage: error.message }] };
+      const authError: AuthError = { errors: [{ errorMessage: error.response.data.detail }] };
       throw new Error(JSON.stringify(authError));
     }
   }

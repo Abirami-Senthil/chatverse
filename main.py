@@ -108,7 +108,7 @@ def login(user: UserModel, db: Session = Depends(get_session_local)) -> dict:
     """Authenticate a user and return a JWT token."""
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Bad username or password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
     access_token = create_access_token({"sub": db_user.username})
     return {"access_token": access_token, "token_type": "bearer"}

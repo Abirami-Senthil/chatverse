@@ -11,12 +11,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AuthError | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
     if (username.trim() === '' || password.trim() === '') {
-      setError('Username and password cannot be empty');
+      setError({ errors: [{ errorMessage: 'Username and password cannot be empty' }] });
       return;
     }
 
@@ -35,8 +35,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
       const e = error as Error;
       try {
         const authError = JSON.parse(e.message) as AuthError;
+        setError(authError);
       } catch {
-        setError(e.message);
+        setError({ errors: [{ errorMessage: e.message }] });
       }
     }
   };
@@ -58,7 +59,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         />
       </div>
       <h2 className="text-lg font-bold mb-4 text-center">Hey there, I'm Abi! {isLogin ? "Login to get started" : "Let's get you registered"}</h2>
-      {error && <p className="text-red-500 mb-2">{error}</p>}
       <input
         type="text"
         placeholder="Username"
@@ -66,22 +66,28 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         onChange={(e) => setUsername(e.target.value)}
         className="w-full mb-2 p-2 border border-gray-300 rounded-xl"
       />
+      {error && error?.errors.map((error, index) => (
+        error.name === 'username' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
+      ))}
       <div className="relative">
         <input
           type={showPassword ? 'text' : 'password'}
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-6 p-2 border border-gray-300 rounded-xl pr-10"
+          className="w-full mb-2 p-2 border border-gray-300 rounded-xl pr-10"
         />
         <button
           type="button"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 flex items-center justify-center text-lg p-1 pb-6"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 flex items-center justify-center text-lg p-1"
           onClick={() => setShowPassword(!showPassword)}
         >
-          {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+          {showPassword ? <AiOutlineEyeInvisible className="align-middle" /> : <AiOutlineEye className="align-middle" />}
         </button>
       </div>
+      {error && error?.errors.map((error, index) => (
+        error.name === undefined || error.name === 'password' ? <p key={index} className="text-red-500 mb-2">{error.errorMessage}</p> : null
+      ))}
       <button
         onClick={handleSubmit}
         className="w-full mb-6 p-2 bg-custom-purple text-white rounded-xl"
