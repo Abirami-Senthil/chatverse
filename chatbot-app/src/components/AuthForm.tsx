@@ -24,29 +24,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
       if (isLogin) {
         response = await ApiService.login(username, password);
       } else {
-        console.log('Here')
         response = await ApiService.register(username, password);
-        console.log(response)
       }
       
       if (response) {
-        // onAuthSuccess(response.access_token);
+        onAuthSuccess(response.access_token);
       }
-    } catch (error: any) {
-      console.log(error)
-      if (error.response && error.response.data && error.response.data.detail) {
-        const detail = error.response.data.detail;
-        if (Array.isArray(detail)) {
-          const errorMessages = detail.map((item: any) => item.msg).join(' ');
-          setError(errorMessages);
-        } else if (typeof detail === 'string') {
-          setError(detail);
-        } else {
-          setError(error.response.data.detail);
-        }
-      } else {
-        setError('Authentication failed. Please try again.');
-      }
+    } catch (error) {
+      const e = error as Error;
+      setError(e.message);
     }
   };
 

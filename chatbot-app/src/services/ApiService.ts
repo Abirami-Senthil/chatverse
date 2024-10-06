@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { AuthResponse, AuthError, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, } from '../types/api';
+import { AuthResponse, AuthError, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, FieldError, } from '../types/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -38,23 +38,31 @@ const checkAuthentication = (): void => {
   if (!axiosInstance) throw new Error('Not authenticated. Please log in.');
 };
 
+const capitaliseFirstLetter = (s: string): string => {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+const handleAuthErrors = (error: any): void => {
+  if (axios.isAxiosError(error) && error.response?.data?.detail) {
+    const errorDetail = error.response.data.detail;
+    if (Array.isArray(errorDetail)) {
+      const errorMessage: FieldError[] = errorDetail.map((err: any) => { return { name: err.loc[err.loc.length - 1], errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}` } });
+      throw new Error(errorMessage);
+    } else {
+      throw new Error(errorDetail);
+    }
+  }
+  throw new Error('Unexpected Error');
+}
+
 export const ApiService = {
-  register: async (username: string, password: string): Promise<ApiResponse<AuthResponse | AuthError>> => {
+  register: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
     try {
       const response = await axios.post<AuthResponse>(`${API_BASE_URL}/register`, { username, password });
       axiosInstance = createAxiosInstance(response.data.access_token);
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.data?.detail) {
-        const errorDetail = error.response.data.detail;
-        if (Array.isArray(errorDetail)) {
-          const errorMessage = errorDetail.map((err: any) => `${err.loc[-1]}: ${err.msg}`).join(', ');
-          throw new Error(errorMessage);
-        } else {
-          throw new Error(errorDetail);
-        }
-      }
-      handleApiError(error);
+      handleAuthErrors(error);
     }
   },
 
@@ -64,7 +72,7 @@ export const ApiService = {
       axiosInstance = createAxiosInstance(response.data.access_token);
       return response.data;
     } catch (error) {
-      handleApiError(error);
+      handleAuthErrors(error);
     }
   },
 

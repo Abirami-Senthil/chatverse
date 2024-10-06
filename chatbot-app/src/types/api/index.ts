@@ -1,4 +1,4 @@
-import { AuthResponse, AuthError } from './AuthResponse';
+import { AuthResponse, AuthError, FieldError } from './AuthResponse';
 import CreateChatResponse from './CreateChatResponse';
 import Interaction from './Interaction';
 import ChatInfo from './ChatInfo';
@@ -8,6 +8,7 @@ import GetChatResponse from './GetChatReponse';
 export type {
   AuthResponse,
   AuthError,
+  FieldError,
   Interaction,
   ChatMessageResponse,
   CreateChatResponse,
