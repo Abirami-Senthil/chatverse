@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiEdit2, FiTrash2, FiCheck, FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import { FiX, FiEdit2, FiTrash2, FiCheck, FiSend, FiMaximize2, FiMinimize2, FiPlus } from 'react-icons/fi';
 import { BiDockLeft, BiDockRight } from "react-icons/bi";
+import { RiChatNewLine } from "react-icons/ri";
 import { ChatController } from '../controllers/ChatController';
 import AuthForm from './AuthForm';
 import './ChatWindow.css';
@@ -22,6 +23,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showCreateChat, setShowCreateChat] = useState(false);
+  const [newChatName, setNewChatName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const [chats, setChats] = useState<ChatInfo[]>([]);
@@ -215,6 +218,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     return <AuthForm onAuthSuccess={handleAuthSuccess} />;
   }
 
+  const handleCreateChat = async () => {
+    if (newChatName.trim() === '') {
+      return;
+    }
+    try {
+      const newChat = await chatController.createChat(newChatName);
+      setChats([...chats, { chat_id: newChat.chat_id, chat_name: newChat.chat_name }]);
+      setSelectedChat(newChat.chat_id);
+      setNewChatName('');
+      setShowCreateChat(false);
+    } catch (error) {
+      console.error('Error creating chat:', error);
+    }
+  }
+
+  const cancelCreateChat = () => {
+    setShowCreateChat(false);
+    setNewChatName('');
+  }
+
   return (
     <div className={`${isExpanded ? 'w-[600px] h-[800px]' : 'w-96 h-[600px]'} ${isPinned ? 'fixed bottom-20 left-5' : 'fixed bottom-20 right-5'} bg-white rounded-lg shadow-2xl flex flex-col`}>
       <div className="flex flex-col items-center justify-center p-4 mt-3 mr-2 ml-2 bg-white rounded-t-lg relative">
@@ -278,7 +301,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
                   {message.suggestions.map((suggestion, suggestionIndex) => (
                     <button
                       key={suggestionIndex}
-                      onClick={() => { 
+                      onClick={() => {
                         setInput(suggestion);
                         sendMessage(suggestion);
                       }}
@@ -306,7 +329,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             id="chat-input-field"
             value={isEditing.index !== null ? isEditing.text : input}
             onChange={(e) => (isEditing.index !== null ? setIsEditing({ ...isEditing, text: e.target.value }) : setInput(e.target.value))}
-            placeholder="Your question"
+            placeholder={selectedChat === '' ? "Select or create a new chat" : "Your question"}
+            disabled={selectedChat === ''}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -320,18 +344,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             className="w-full px-3 py-2 pr-14 border border-transparent rounded-md focus:outline-none resize-none overflow-auto"
             rows={2}
           />
-          <select
-            value={selectedChat}
-            onChange={handleChatSelect}
-            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
-          >
-            <option value="" disabled>Select a chat</option>
-            {chats.map((chat) => (
-              <option key={chat.chat_id} value={chat.chat_id}>
-                {chat.chat_name}
-              </option>
-            ))}
-          </select>
         </div>
         {isEditing.index !== null ? (
           <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">
@@ -349,13 +361,64 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
             </button>
           </div>
         ) : (
-          <div className="flex justify-end mt-2 pr-4 pb-4">
-            <button
-              onClick={() => sendMessage()}
-              className="text-gray-500 text-xs rotate-45"
+          <div className="flex mt-2 pr-4 pb-4">
+            {!showCreateChat && <><select
+              value={selectedChat}
+              onChange={handleChatSelect}
+              className="mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
             >
-              <FiSend size={24} />
-            </button>
+              <option value="" disabled>Select a chat</option>
+              {chats.map((chat) => (
+                <option key={chat.chat_id} value={chat.chat_id}>
+                  {chat.chat_name}
+                </option>
+              ))}
+            </select>
+              <button
+                onClick={() => setShowCreateChat(true)}
+                className="text-blue-600 text-xs ml-1"
+              >
+                <RiChatNewLine size={24} />
+              </button>
+              <button
+                onClick={() => sendMessage()}
+                className="text-gray-500 text-xs rotate-45 ml-auto"
+              >
+                <FiSend size={24} />
+              </button>
+            </>}
+            {showCreateChat && (
+              <div className="w-full flex flex-row mt-2">
+                <input
+                  type="text"
+                  value={newChatName}
+                  onChange={(e) => setNewChatName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCreateChat();
+                    }
+                  }}
+                  placeholder="Enter chat name"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none w-full"
+                />
+                <div className="flex flex-row justify-end">
+                  <button
+                    onClick={cancelCreateChat}
+                    className="text-red-600 text-xs p-2"
+                  >
+                    <FiX size={24} />
+                  </button>
+                  <button
+                    onClick={handleCreateChat}
+                    className="text-green-600 text-xs p-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                    disabled={newChatName.trim() === ''}
+                  >
+                    <FiCheck size={24} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
