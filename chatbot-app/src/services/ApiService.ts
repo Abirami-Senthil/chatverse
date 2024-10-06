@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { AuthResponse, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, } from '../types/api';
+import { AuthResponse, AuthError, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, } from '../types/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
@@ -39,7 +39,7 @@ const checkAuthentication = (): void => {
 };
 
 export const ApiService = {
-  register: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
+  register: async (username: string, password: string): Promise<ApiResponse<AuthResponse | AuthError>> => {
     try {
       const response = await axios.post<AuthResponse>(`${API_BASE_URL}/register`, { username, password });
       axiosInstance = createAxiosInstance(response.data.access_token);
