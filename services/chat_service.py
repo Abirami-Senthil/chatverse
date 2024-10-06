@@ -167,10 +167,10 @@ class ChatService:
         :param message: Message to get a response for
         :return: Response
         """
-        return predefined_responses.get(
-            message.strip().lower(),
-            "Sorry, I don't understand that. Can you ask something else?",
-        )
+        for key in predefined_responses.keys():
+            if key.lower() in message.strip().lower():
+                return predefined_responses[key]
+        return "Sorry, I don't understand that. Can you ask something else?"
 
     @staticmethod
     def get_suggestions() -> List[str]:
