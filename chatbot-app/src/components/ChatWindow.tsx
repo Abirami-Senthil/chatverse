@@ -107,7 +107,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     // Get bot response from the server
     setTimeout(async () => {
       const interaction = await chatController.sendMessage(input);
-      debugger;
       if (interaction) {
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages];
@@ -268,10 +267,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
               )}
             </div>
             <div className="flex space-x-2 mt-2">
-              {message.suggestions.map((suggestion, suggestionIndex) => (
+              {index === messages.length - 1 && message.suggestions && message.suggestions.map((suggestion, suggestionIndex) => (
                 <button
                   key={suggestionIndex}
-                  onClick={() => { setInput(suggestion); sendMessage(); }}
+                  onClick={() => { setInput(suggestion); setTimeout(sendMessage, 0); }}
                   className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-700"
                 >
                   {suggestion}

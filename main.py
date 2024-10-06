@@ -131,7 +131,7 @@ async def get_chat_interactions(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Get all interactions for a specific chat."""
-    if not chat_service.verify_user_ownership(chat_id, current_user.id):
+    if not chat_service.verify_user_ownership(chat_id, current_user.id, db):
         raise HTTPException(
             status_code=403, detail="You do not have permission to access this chat."
         )
@@ -149,7 +149,7 @@ async def add_message(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Add a message to a chat."""
-    if not chat_service.verify_user_ownership(chat_id, current_user.id):
+    if not chat_service.verify_user_ownership(chat_id, current_user.id, db):
         raise HTTPException(
             status_code=403, detail="You do not have permission to access this chat."
         )
@@ -168,7 +168,7 @@ async def edit_message(
     current_user: User = Depends(get_current_user),
 ) -> list:
     """Edit a message in a chat."""
-    if not chat_service.verify_user_ownership(chat_id, current_user.id):
+    if not chat_service.verify_user_ownership(chat_id, current_user.id, db):
         raise HTTPException(
             status_code=403, detail="You do not have permission to access this chat."
         )
@@ -188,7 +188,7 @@ async def delete_message(
     current_user: User = Depends(get_current_user),
 ) -> list:
     """Delete a message from a chat."""
-    if not chat_service.verify_user_ownership(chat_id, current_user.id):
+    if not chat_service.verify_user_ownership(chat_id, current_user.id, db):
         raise HTTPException(
             status_code=403, detail="You do not have permission to access this chat."
         )

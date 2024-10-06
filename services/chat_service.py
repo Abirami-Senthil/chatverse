@@ -113,7 +113,7 @@ class ChatService:
             logging.error(f"Error retrieving chat {chat_id}: {e}")
             return None
 
-    def verify_user_ownership(self, chat_id: str, user_id: str) -> bool:
+    def verify_user_ownership(self, chat_id: str, user_id: str, db: Session) -> bool:
         """
         Verify if the given user is the owner of the chat.
 
@@ -122,7 +122,7 @@ class ChatService:
         :return: True if the user owns the chat, False otherwise
         """
         try:
-            return self.chat_repo.verify_user_ownership(chat_id, user_id)
+            return self.chat_repo.verify_user_ownership(chat_id, user_id, db)
         except Exception as e:
             logging.error(
                 f"Error verifying ownership for chat {chat_id} and user {user_id}: {e}"
@@ -143,7 +143,7 @@ class ChatService:
             logging.error(f"Error listing chats for user {user_id}: {e}")
             return []
 
-    def verify_user_ownership(self, chat_id: str, user_id: str) -> bool:
+    def verify_user_ownership(self, chat_id: str, user_id: str, db: Session) -> bool:
         """
         Verify if the given user is the owner of the chat.
 
@@ -152,7 +152,7 @@ class ChatService:
         :return: True if the user owns the chat, False otherwise
         """
         try:
-            return self.chat_repo.verify_user_ownership(chat_id, user_id)
+            return self.chat_repo.verify_user_ownership(chat_id, user_id, db)
         except Exception as e:
             logging.error(
                 f"Error verifying chat ownership for chat {chat_id} and user {user_id}: {e}"

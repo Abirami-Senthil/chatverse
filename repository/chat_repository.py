@@ -139,14 +139,14 @@ class ChatRepository:
             }
 
             chat_cache[chat_id] = chat_data
-
+            print(chat_data)
             return chat_data
         except SQLAlchemyError as e:
             logging.error(f"Error loading chat {chat_id} from database: {e}")
             return None
 
     @staticmethod
-    def verify_user_ownership(chat_id: str, user_id: str) -> bool:
+    def verify_user_ownership(chat_id: str, user_id: str, db: Session) -> bool:
         """
         Verify if the given user is the owner of the chat.
 
@@ -155,7 +155,10 @@ class ChatRepository:
         :return: True if the user owns the chat, False otherwise
         """
         if chat_id not in chat_cache:
-            return False
+            chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+            if chat_data is None:
+                return False
+            chat_cache[chat_id] = chat_data
         return chat_cache[chat_id]["user_id"] == user_id
 
     @staticmethod

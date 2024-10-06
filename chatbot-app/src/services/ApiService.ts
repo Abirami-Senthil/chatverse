@@ -45,6 +45,15 @@ export const ApiService = {
       axiosInstance = createAxiosInstance(response.data.access_token);
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.data?.detail) {
+        const errorDetail = error.response.data.detail;
+        if (Array.isArray(errorDetail)) {
+          const errorMessage = errorDetail.map((err: any) => `${err.loc[-1]}: ${err.msg}`).join(', ');
+          throw new Error(errorMessage);
+        } else {
+          throw new Error(errorDetail);
+        }
+      }
       handleApiError(error);
     }
   },
