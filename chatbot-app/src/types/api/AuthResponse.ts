@@ -4,16 +4,16 @@ interface AuthResponse {
 }
 
 interface AuthError {
-  errors: FieldError[]
+  errors: FieldError[];
 }
 
 interface FieldError {
-  name?: string,
-  errorMessage: string
+  name?: string;
+  errorMessage: string;
 }
 
 export type {
   AuthResponse,
   AuthError,
   FieldError
-}
+};

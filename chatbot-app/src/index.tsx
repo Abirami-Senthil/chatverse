@@ -1,7 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css'; // Import Tailwind CSS and global styles
+import './index.css';
 import App from './App';
+
+/**
+ * Entry point for the React application.
+ * This file renders the main App component into the root DOM element.
+ */
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

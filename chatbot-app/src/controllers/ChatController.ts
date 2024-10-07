@@ -11,6 +11,7 @@ export class ChatController {
 
   /**
    * Initializes a new instance of the ChatController.
+   * Sets up the ChatModel instance to interact with the backend.
    */
   constructor() {
     this.chatModel = new ChatModel();
@@ -18,9 +19,14 @@ export class ChatController {
 
   /**
    * Creates a new chat.
-   * @returns {Promise<any>} The created chat interaction or undefined if an error occurs.
+   * @param {string} chatName - The name of the chat to be created.
+   * @returns {Promise<CreateChatResponse>} The created chat interaction.
+   * @throws Will throw an error if chat creation fails.
    */
   async createChat(chatName: string): Promise<CreateChatResponse> {
+    if (!chatName.trim()) {
+      throw new Error('Chat name cannot be empty');
+    }
     try {
       return await this.chatModel.createChat(chatName);
     } catch (error) {
@@ -32,7 +38,8 @@ export class ChatController {
   /**
    * Sends a message in the chat.
    * @param {string} message - The message to send.
-   * @returns {Promise<any>} The result of sending the message or undefined if an error occurs.
+   * @returns {Promise<Interaction>} The result of sending the message.
+   * @throws Will throw an error if sending the message fails or if the message is empty.
    */
   async sendMessage(message: string): Promise<Interaction> {
     if (!message.trim()) {
@@ -50,7 +57,8 @@ export class ChatController {
    * Edits an existing message in the chat.
    * @param {string} interactionId - The ID of the interaction to edit.
    * @param {string} message - The new message content.
-   * @returns {Promise<any>} The result of editing the message or undefined if an error occurs.
+   * @returns {Promise<Interaction[]>} The updated list of interactions.
+   * @throws Will throw an error if editing the message fails or if parameters are invalid.
    */
   async editMessage(interactionId: string, message: string): Promise<Interaction[]> {
     if (!interactionId.trim() || !message.trim()) {
@@ -67,7 +75,8 @@ export class ChatController {
   /**
    * Deletes a message from the chat.
    * @param {string} interactionId - The ID of the interaction to delete.
-   * @returns {Promise<any>} The result of deleting the message or undefined if an error occurs.
+   * @returns {Promise<Interaction[]>} The updated list of interactions.
+   * @throws Will throw an error if deleting the message fails or if the interaction ID is invalid.
    */
   async deleteMessage(interactionId: string): Promise<Interaction[]> {
     if (!interactionId.trim()) {
@@ -83,7 +92,8 @@ export class ChatController {
 
   /**
    * Lists all chats.
-   * @returns {Promise<any>} The result of listing the chats or undefined if an error occurs.
+   * @returns {Promise<ChatInfo[]>} The list of all available chats.
+   * @throws Will throw an error if listing the chats fails.
    */
   async listChats(): Promise<ChatInfo[]> {
     try {
@@ -97,7 +107,8 @@ export class ChatController {
   /**
    * Loads a chat by its ID.
    * @param {string} chatId - The ID of the chat to load.
-   * @returns {Promise<any>} The result of loading the chat or undefined if an error occurs.
+   * @returns {Promise<Interaction[]>} The interactions of the loaded chat.
+   * @throws Will throw an error if loading the chat fails or if the chat ID is invalid.
    */
   async loadChat(chatId: string): Promise<Interaction[]> {
     if (!chatId.trim()) {

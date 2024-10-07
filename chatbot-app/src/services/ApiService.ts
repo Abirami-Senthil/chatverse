@@ -21,13 +21,19 @@ const createAxiosInstance = (token: string): AxiosInstance => {
   });
 };
 
-
+/**
+ * Handles API errors and throws a descriptive error message.
+ * @param error - The error object to handle.
+ * @throws An error containing the status code and message if it's an Axios error.
+ */
 const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError;
+    console.error(`API Error: ${axiosError.response?.status} - ${axiosError.message}`);
     throw new Error(`API Error: ${axiosError.response?.status} - ${axiosError.message}`);
   }
-  throw error;
+  console.error('Unexpected error:', error);
+  throw new Error('Unexpected error occurred');
 };
 
 /**
@@ -38,26 +44,51 @@ const checkAuthentication = (): void => {
   if (!axiosInstance) throw new Error('Not authenticated. Please log in.');
 };
 
+/**
+ * Capitalizes the first letter of a string.
+ * @param s - The string to capitalize.
+ * @returns The string with the first letter capitalized.
+ */
 const capitaliseFirstLetter = (s: string): string => {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
+/**
+ * Handles authentication errors and throws a descriptive error message.
+ * @param error - The error object to handle.
+ * @throws An error containing detailed authentication errors if available.
+ */
 const handleAuthErrors = (error: any): void => {
   if (axios.isAxiosError(error) && error.response?.data?.detail) {
     const errorDetail = error.response.data.detail;
     if (Array.isArray(errorDetail)) {
-      const errors: FieldError[] = errorDetail.map((err: any) => { return { name: err.loc[err.loc.length - 1], errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}` } });
+      const errors: FieldError[] = errorDetail.map((err: any) => {
+        return {
+          name: err.loc[err.loc.length - 1],
+          errorMessage: `${err.msg.replace("String", capitaliseFirstLetter(err.loc[err.loc.length - 1]))}`
+        };
+      });
       const authError: AuthError = { errors };
+      console.error('Authentication error:', authError);
       throw new Error(JSON.stringify(authError));
     } else {
       const authError: AuthError = { errors: [{ errorMessage: error.response.data.detail }] };
+      console.error('Authentication error:', authError);
       throw new Error(JSON.stringify(authError));
     }
   }
-  throw new Error('Unexpected Error');
-}
+  console.error('Unexpected authentication error:', error);
+  throw new Error('Unexpected authentication error');
+};
 
 export const ApiService = {
+  /**
+   * Registers a new user.
+   * @param username - The username of the user.
+   * @param password - The password of the user.
+   * @returns The authentication response containing the access token.
+   * @throws An error if registration fails.
+   */
   register: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
     try {
       const response = await axios.post<AuthResponse>(`${API_BASE_URL}/register`, { username, password });
@@ -68,6 +99,13 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Logs in an existing user.
+   * @param username - The username of the user.
+   * @param password - The password of the user.
+   * @returns The authentication response containing the access token.
+   * @throws An error if login fails.
+   */
   login: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
     try {
       const response = await axios.post<AuthResponse>(`${API_BASE_URL}/login`, { username, password });
@@ -80,14 +118,18 @@ export const ApiService = {
 
   /**
    * Initializes an axios instance using the provided token.
-   * @param {string} token - The token to be used for authentication.
-   * @returns {void}
+   * @param token - The token to be used for authentication.
    */
   initialize: (token: string): void => {
     axiosInstance = createAxiosInstance(token);
   },
 
-
+  /**
+   * Creates a new chat.
+   * @param chatName - The name of the chat to create.
+   * @returns The created chat response.
+   * @throws An error if chat creation fails.
+   */
   createChat: async (chatName: string): Promise<ApiResponse<CreateChatResponse>> => {
     try {
       checkAuthentication();
@@ -100,6 +142,13 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Adds a message to the specified chat.
+   * @param chatId - The ID of the chat.
+   * @param message - The message to add.
+   * @returns The added interaction.
+   * @throws An error if adding the message fails.
+   */
   addMessage: async (chatId: string, message: string): Promise<ApiResponse<Interaction>> => {
     try {
       checkAuthentication();
@@ -110,6 +159,14 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Edits an existing message in the specified chat.
+   * @param chatId - The ID of the chat.
+   * @param interactionId - The ID of the interaction to edit.
+   * @param message - The new message content.
+   * @returns The updated list of interactions.
+   * @throws An error if editing the message fails.
+   */
   editMessage: async (chatId: string, interactionId: string, message: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
@@ -120,6 +177,13 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Deletes a message from the specified chat.
+   * @param chatId - The ID of the chat.
+   * @param interactionId - The ID of the interaction to delete.
+   * @returns The updated list of interactions.
+   * @throws An error if deleting the message fails.
+   */
   deleteMessage: async (chatId: string, interactionId: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
@@ -130,6 +194,12 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Loads a chat by its ID.
+   * @param chatId - The ID of the chat to load.
+   * @returns The chat data including interactions.
+   * @throws An error if loading the chat fails.
+   */
   loadChat: async (chatId: string): Promise<ApiResponse<GetChatResponse>> => {
     try {
       checkAuthentication();
@@ -140,6 +210,11 @@ export const ApiService = {
     }
   },
 
+  /**
+   * Lists all available chats.
+   * @returns A list of all chats.
+   * @throws An error if listing the chats fails.
+   */
   listChats: async (): Promise<ApiResponse<ChatInfo[]>> => {
     try {
       checkAuthentication();

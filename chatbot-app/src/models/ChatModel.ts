@@ -2,20 +2,24 @@ import { ApiService } from '../services/ApiService';
 import { CreateChatResponse } from '../types/api';
 import ChatInfo from '../types/api/ChatInfo';
 import Interaction from '../types/api/Interaction';
-import ChatIteraction from '../types/chat/Chat';
 
 /**
  * Represents a chat model that interacts with the API service.
+ * Handles CRUD operations for chats and messages.
  */
 export class ChatModel {
   private chatId: string | null = null;
 
   /**
    * Creates a new chat.
-   * @returns {Promise<Interaction>} The created chat data.
+   * @param {string} chatName - The name of the chat to create.
+   * @returns {Promise<CreateChatResponse>} The created chat response.
    * @throws {Error} If chat creation fails.
    */
   async createChat(chatName: string): Promise<CreateChatResponse> {
+    if (!chatName.trim()) {
+      throw new Error('Chat name cannot be empty');
+    }
     try {
       const data = await ApiService.createChat(chatName);
       if (!data) {
@@ -33,15 +37,14 @@ export class ChatModel {
    * Loads an existing chat using the chat ID.
    * @param {string} chatId - The ID of the chat to load.
    * @returns {Promise<Interaction[]>} The interactions of the loaded chat.
-   * @throws {Error} If loading the chat fails.
+   * @throws {Error} If loading the chat fails or if the chat ID is invalid.
    */
   async loadChat(chatId: string): Promise<Interaction[]> {
+    if (!chatId.trim()) {
+      throw new Error('Chat ID cannot be empty');
+    }
     try {
       const data = await ApiService.loadChat(chatId);
-      if (!data) {
-        throw new Error('No data returned from API');
-      }
-      this.chatId = data.chat_id;
       if (!data) {
         throw new Error('No data returned from API');
       }
@@ -61,6 +64,9 @@ export class ChatModel {
    */
   async addMessage(message: string): Promise<Interaction> {
     this.ensureChatCreated();
+    if (!message.trim()) {
+      throw new Error('Message cannot be empty');
+    }
     try {
       const data = await ApiService.addMessage(this.chatId!, message);
       if (!data) {
@@ -77,11 +83,14 @@ export class ChatModel {
    * Edits a message in the current chat.
    * @param {string} interactionId - The ID of the interaction to edit.
    * @param {string} message - The new message content.
-   * @returns {Promise<Interaction>} The result of editing the message.
+   * @returns {Promise<Interaction[]>} The result of editing the message.
    * @throws {Error} If the chat hasn't been created or if editing the message fails.
    */
   async editMessage(interactionId: string, message: string): Promise<Interaction[]> {
     this.ensureChatCreated();
+    if (!interactionId.trim() || !message.trim()) {
+      throw new Error('Interaction ID and message cannot be empty');
+    }
     try {
       const data = await ApiService.editMessage(this.chatId!, interactionId, message);
       if (!data) {
@@ -102,6 +111,9 @@ export class ChatModel {
    */
   async deleteMessage(interactionId: string): Promise<Interaction[]> {
     this.ensureChatCreated();
+    if (!interactionId.trim()) {
+      throw new Error('Interaction ID cannot be empty');
+    }
     try {
       const data = await ApiService.deleteMessage(this.chatId!, interactionId);
       if (!data) {

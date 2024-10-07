@@ -2,22 +2,26 @@ import { FiCheck, FiSend, FiX } from "react-icons/fi";
 import { ChatInfo } from "../types/api";
 import { RiChatNewLine } from "react-icons/ri";
 
+/**
+ * ChatInputArea Component
+ * Handles the input area for user messages, editing messages, and creating new chats.
+ */
 export const ChatInputArea: React.FC<{
-    input: string;
-    setInput: (input: string) => void;
-    isEditing: { index: number | null; text: string; interactionId: string };
-    setIsEditing: (isEditing: { index: number | null; text: string; interactionId: string }) => void;
-    handleEditSave: () => void;
-    sendMessage: (str?: string) => void;
-    showCreateChat: boolean;
-    setShowCreateChat: (show: boolean) => void;
-    chats: ChatInfo[];
-    selectedChat: string;
-    handleChatSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-    newChatName: string;
-    setNewChatName: (name: string) => void;
-    handleCreateChat: () => void;
-    cancelCreateChat: () => void;
+    input: string; // Current input text from the user
+    setInput: (input: string) => void; // Function to update input text
+    isEditing: { index: number | null; text: string; interactionId: string }; // State for managing message editing
+    setIsEditing: (isEditing: { index: number | null; text: string; interactionId: string }) => void; // Function to set editing state
+    handleEditSave: () => void; // Function to handle saving an edited message
+    sendMessage: (str?: string) => void; // Function to send a message
+    showCreateChat: boolean; // State indicating whether the create chat input is displayed
+    setShowCreateChat: (show: boolean) => void; // Function to toggle the create chat view
+    chats: ChatInfo[]; // List of available chats
+    selectedChat: string; // Currently selected chat ID
+    handleChatSelect: (event: React.ChangeEvent<HTMLSelectElement>) => void; // Function to handle selecting a chat
+    newChatName: string; // Name for a new chat
+    setNewChatName: (name: string) => void; // Function to update the new chat name
+    handleCreateChat: () => void; // Function to create a new chat
+    cancelCreateChat: () => void; // Function to cancel creating a new chat
 }> = ({
     input,
     setInput,
@@ -36,6 +40,7 @@ export const ChatInputArea: React.FC<{
     cancelCreateChat,
 }) => (
         <div className="p-4">
+            {/* Input area for user messages or chat selection */}
             {!showCreateChat && (
                 <div className="relative flex items-center">
                     <img
@@ -46,7 +51,7 @@ export const ChatInputArea: React.FC<{
                     <textarea
                         id="chat-input-field"
                         value={isEditing.index !== null ? isEditing.text : input}
-                        onChange={(e) => (isEditing.index !== null ? setIsEditing({ ...isEditing, text: e.target.value }) : setInput(e.target.value))}
+                        onChange={(e) => isEditing.index !== null ? setIsEditing({ ...isEditing, text: e.target.value }) : setInput(e.target.value)}
                         placeholder={selectedChat === '' ? "Select or create a new chat" : "Your question"}
                         disabled={selectedChat === ''}
                         onKeyDown={(e) => {
@@ -64,14 +69,18 @@ export const ChatInputArea: React.FC<{
                     />
                 </div>
             )}
+
+            {/* Controls for editing or sending a message */}
             {isEditing.index !== null ? (
                 <div className="flex justify-end mt-2 space-x-2 pr-4 pb-4">
+                    {/* Button to cancel editing */}
                     <button
                         onClick={() => setIsEditing({ index: null, text: '', interactionId: '' })}
                         className="text-red-600 text-xs"
                     >
                         <FiX size={24} />
                     </button>
+                    {/* Button to save edited message */}
                     <button
                         onClick={handleEditSave}
                         className="text-green-600 text-xs"
@@ -83,6 +92,7 @@ export const ChatInputArea: React.FC<{
                 <div className="flex mt-2 pr-4 pb-4">
                     {!showCreateChat && (
                         <>
+                            {/* Chat context dropdown */}
                             <span className="mt-2 text-sm text-gray-500 flex items-center pr-2">Context</span>
                             <select
                                 value={selectedChat}
@@ -96,20 +106,26 @@ export const ChatInputArea: React.FC<{
                                     </option>
                                 ))}
                             </select>
+                            {/* Button to create a new chat */}
                             <button
                                 onClick={() => setShowCreateChat(true)}
                                 className="text-blue-600 text-xs ml-4 mt-2"
+                                aria-label="Create new chat"
                             >
                                 <RiChatNewLine size={24} />
                             </button>
+                            {/* Button to send a message */}
                             <button
                                 onClick={() => sendMessage()}
                                 className="mt-2 text-gray-500 text-xs rotate-45 ml-auto"
+                                aria-label="Send message"
                             >
                                 <FiSend size={24} />
                             </button>
                         </>
                     )}
+
+                    {/* Input field for creating a new chat */}
                     {showCreateChat && (
                         <div className="w-full flex flex-row mt-2">
                             <input
@@ -130,16 +146,20 @@ export const ChatInputArea: React.FC<{
                                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none w-full"
                             />
                             <div className="flex flex-row justify-end">
+                                {/* Button to cancel creating a new chat */}
                                 <button
                                     onClick={cancelCreateChat}
                                     className="text-red-600 text-xs p-2"
+                                    aria-label="Cancel create chat"
                                 >
                                     <FiX size={24} />
                                 </button>
+                                {/* Button to confirm creating a new chat */}
                                 <button
                                     onClick={handleCreateChat}
                                     className="text-green-600 text-xs p-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
                                     disabled={newChatName.trim() === ''}
+                                    aria-label="Create chat"
                                 >
                                     <FiCheck size={24} />
                                 </button>
