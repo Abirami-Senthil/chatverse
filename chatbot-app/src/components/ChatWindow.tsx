@@ -138,7 +138,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
           return updatedMessages;
         });
       }
-    }, 100);
+    }, 500);
 
     setInput('');
   };
@@ -158,26 +158,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
     if (isEditing.index === null || !isEditing.interactionId) return;
 
     const remainingInteractions = await chatController.editMessage(isEditing.interactionId, isEditing.text);
-    if (remainingInteractions) {
-      setMessages(remainingInteractions.flatMap((interaction: any) => {
-        const expandedMessages = [];
-        if (interaction.message) {
+    setMessages((prevMessages) => prevMessages.slice(0, isEditing.index! + 1));
+    setTimeout(() => {
+      if (remainingInteractions) {
+        setMessages(remainingInteractions.flatMap((interaction: any) => {
+          const expandedMessages = [];
+          if (interaction.message) {
+            expandedMessages.push({
+              sender: 'user',
+              text: interaction.message,
+              interactionId: interaction.interaction_id,
+              suggestions: [],
+            });
+          }
           expandedMessages.push({
-            sender: 'user',
-            text: interaction.message,
+            sender: 'bot',
+            text: interaction.response,
             interactionId: interaction.interaction_id,
-            suggestions: [],
+            suggestions: interaction.suggestions,
           });
-        }
-        expandedMessages.push({
-          sender: 'bot',
-          text: interaction.response,
-          interactionId: interaction.interaction_id,
-          suggestions: interaction.suggestions,
-        });
-        return expandedMessages;
-      }));
-    }
+          return expandedMessages;
+        }));
+      }
+    }, 500);
 
     setIsEditing({ index: null, text: '', interactionId: "" });
   };

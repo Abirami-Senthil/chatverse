@@ -53,7 +53,7 @@ export const ChatMessages: React.FC<{
                                         setInput(suggestion);
                                         sendMessage(suggestion);
                                     }}
-                                    className="bg-white border border-custom-purple text-custom-purple px-4 py-1 rounded-3xl mb-2 max-w-[90%] block text-left"
+                                    className="bg-white border border-custom-purple text-custom-purple px-4 py-1 rounded-3xl mb-2 max-w-[90%] block text-left text-sm"
                                 >
                                     {suggestion}
                                 </button>

@@ -22,7 +22,7 @@ class ChatService:
         :return: A dictionary containing the chat ID and initial interaction
         """
         try:
-            greeting = predefined_responses["hello"]
+            greeting = predefined_responses["Hello"]
             response = self.chat_repo.create_chat(chat_name, greeting, db, user_id)
             response["interaction"]["suggestions"] = self.get_suggestions()
             return response

@@ -83,6 +83,7 @@ export const ChatInputArea: React.FC<{
                 <div className="flex mt-2 pr-4 pb-4">
                     {!showCreateChat && (
                         <>
+                            <span className="mt-2 text-sm text-gray-500 flex items-center pr-2">Context</span>
                             <select
                                 value={selectedChat}
                                 onChange={handleChatSelect}
@@ -103,7 +104,7 @@ export const ChatInputArea: React.FC<{
                             </button>
                             <button
                                 onClick={() => sendMessage()}
-                                className="text-gray-500 text-xs rotate-45 ml-auto"
+                                className="mt-2 text-gray-500 text-xs rotate-45 ml-auto"
                             >
                                 <FiSend size={24} />
                             </button>
