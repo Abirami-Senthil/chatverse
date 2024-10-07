@@ -4,11 +4,16 @@ from fastapi.testclient import TestClient
 from main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 from database import Base
 from models.user_token import UserToken
 from utils.uuid_utis import create_uuid
+import logging
 
 client = TestClient(app)
+
+# Configure logging
+logging.basicConfig(level=logging.ERROR)
 
 # Constants
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -22,42 +27,58 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create the test database
-Base.metadata.create_all(bind=engine)
-
+try:
+    Base.metadata.create_all(bind=engine)
+except SQLAlchemyError as e:
+    logging.error(f"Error creating test database tables: {e}")
 
 @pytest.fixture
 def create_user_and_get_token():
-    """Register and log in a user, then yield the access token."""
+    """
+    Register and log in a user, then yield the access token.
+    """
     user_data = {"username": create_uuid(), "password": "password123"}
     response = client.post("/register", json=user_data)
     assert response.status_code == 200
     yield response.json()["access_token"]
 
-
 @pytest.fixture
 def create_chat(create_user_and_get_token):
-    """Create a chat and yield the chat ID."""
+    """
+    Create a chat and yield the chat ID.
+    """
     with TestingSessionLocal() as db:
-        headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
-        response = client.get(
-            f"/chat/init?chat_name={create_uuid()[:10]}", headers=headers
-        )
-        assert response.status_code == 200
-        yield response.json()["chat_id"]
-        db.rollback()
-
+        try:
+            headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
+            response = client.get(
+                f"/chat/init?chat_name={create_uuid()[:10]}", headers=headers
+            )
+            assert response.status_code == 200
+            yield response.json()["chat_id"]
+        except SQLAlchemyError as e:
+            logging.error(f"Error creating chat: {e}")
+        finally:
+            db.rollback()
 
 @pytest.fixture(scope="function", autouse=True)
 def clear_test_data():
-    """Clear the test database before each test to ensure no data persistence."""
+    """
+    Clear the test database before each test to ensure no data persistence.
+    """
     with TestingSessionLocal() as db:
-        db.query(Base.metadata.tables["interactions"]).delete()
-        db.query(Base.metadata.tables["users"]).delete()
-        db.commit()
+        try:
+            db.query(Base.metadata.tables["interactions"]).delete()
+            db.query(Base.metadata.tables["users"]).delete()
+            db.commit()
+        except SQLAlchemyError as e:
+            logging.error(f"Error clearing test data: {e}")
+            db.rollback()
 
 
 def test_register_and_login():
-    """Test user registration and login."""
+    """
+    Test user registration and login.
+    """
     user_data = {"username": create_uuid(), "password": create_uuid()}
     response = client.post("/register", json=user_data)
     assert response.status_code == 200
@@ -68,7 +89,9 @@ def test_register_and_login():
 
 
 def test_create_chat(create_user_and_get_token):
-    """Test creating a new chat and verifying the default interaction."""
+    """
+    Test creating a new chat and verifying the default interaction.
+    """
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
     response = client.get(f"/chat/init?chat_name={create_uuid()[:10]}", headers=headers)
     assert response.status_code == 200
@@ -81,7 +104,9 @@ def test_create_chat(create_user_and_get_token):
 
 
 def test_add_message(create_chat, create_user_and_get_token):
-    """Test adding a message to a chat."""
+    """
+    Test adding a message to a chat.
+    """
     chat_id = create_chat
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
     message_data = {"message": "hello"}
@@ -97,7 +122,9 @@ def test_add_message(create_chat, create_user_and_get_token):
 
 
 def test_edit_message(create_chat, create_user_and_get_token):
-    """Test editing a message and verifying that only subsequent interactions are deleted."""
+    """
+    Test editing a message and verifying that only subsequent interactions are deleted.
+    """
     chat_id = create_chat
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
     message_data_1 = {"message": "hello"}
@@ -134,7 +161,9 @@ def test_edit_message(create_chat, create_user_and_get_token):
 
 
 def test_delete_message(create_chat, create_user_and_get_token):
-    """Test deleting a message and verifying that only subsequent interactions are deleted."""
+    """
+    Test deleting a message and verifying that only subsequent interactions are deleted.
+    """
     chat_id = create_chat
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
     message_data_1 = {"message": "hello"}
@@ -164,7 +193,9 @@ def test_delete_message(create_chat, create_user_and_get_token):
 
 
 def test_user_ownership(create_user_and_get_token):
-    """Test user ownership validation."""
+    """
+    Test user ownership validation.
+    """
     headers_user_1 = {"Authorization": f"Bearer {create_user_and_get_token}"}
     response = client.get(
         f"/chat/init?chat_name={create_uuid()[:10]}", headers=headers_user_1
@@ -182,16 +213,28 @@ def test_user_ownership(create_user_and_get_token):
     assert response.status_code == 403
     assert response.json()["detail"] == USER_NOT_ALLOWED
 
-    message_data = {"message": "Is this allowed?"}
     response = client.post(
-        f"/chat/{chat_id}/message", json=message_data, headers=headers_user_2
+        f"/chat/{chat_id}/message", json={"message": "hello"}, headers=headers_user_2
     )
     assert response.status_code == 403
     assert response.json()["detail"] == USER_NOT_ALLOWED
 
+    response = client.patch(
+        f"/chat/{chat_id}/message/{create_uuid()}", json={"message": "edit"}, headers=headers_user_2
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == USER_NOT_ALLOWED
+
+    response = client.delete(
+        f"/chat/{chat_id}/message/{create_uuid()}", headers=headers_user_2
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == USER_NOT_ALLOWED
 
 def test_list_user_chats(create_user_and_get_token):
-    """Test listing all chats for a user."""
+    """
+    Test listing all chats for a user.
+    """
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
 
     # Create multiple chats

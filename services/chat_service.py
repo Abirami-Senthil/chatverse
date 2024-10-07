@@ -8,7 +8,9 @@ import logging
 
 class ChatService:
     def __init__(self):
-        """Initialize the ChatService with a ChatRepository instance."""
+        """
+        Initialize the ChatService with a ChatRepository instance.
+        """
         self.chat_repo = ChatRepository()
 
     def create_chat(
@@ -17,14 +19,16 @@ class ChatService:
         """
         Create a new chat for a user.
 
+        :param chat_name: Name of the chat
         :param db: Database session
         :param user_id: ID of the user creating the chat
-        :return: A dictionary containing the chat ID and initial interaction
+        :return: A dictionary containing the chat ID and initial interaction if successful, None otherwise
         """
         try:
             greeting = predefined_responses["Hello"]
             response = self.chat_repo.create_chat(chat_name, greeting, db, user_id)
-            response["interaction"]["suggestions"] = self.get_suggestions()
+            if response is not None:
+                response["interaction"]["suggestions"] = self.get_suggestions()
             return response
         except Exception as e:
             logging.error(f"Error creating chat for user {user_id}: {e}")
@@ -39,13 +43,14 @@ class ChatService:
         :param chat_id: ID of the chat
         :param message: Message to add
         :param db: Database session
-        :return: A dictionary containing the updated interaction
+        :return: A dictionary containing the updated interaction if successful, None otherwise
         """
         try:
             response = self.chat_repo.add_message(
                 chat_id, message, self.get_response(message), db
             )
-            response["suggestions"] = self.get_suggestions()
+            if response is not None:
+                response["suggestions"] = self.get_suggestions()
             return response
         except Exception as e:
             logging.error(f"Error adding message to chat {chat_id}: {e}")
@@ -60,7 +65,7 @@ class ChatService:
         :param interaction_id: ID of the interaction to edit
         :param new_message: New message content
         :param db: Database session
-        :return: A dictionary containing the updated interaction
+        :return: A list of updated interactions if successful, None otherwise
         """
         try:
             response = self.chat_repo.edit_message(
@@ -81,7 +86,7 @@ class ChatService:
 
         :param interaction_id: ID of the interaction to delete
         :param db: Database session
-        :return: A list of remaining interactions
+        :return: A list of remaining interactions if successful, None otherwise
         """
         try:
             response = self.chat_repo.delete_message(interaction_id, db)
@@ -98,7 +103,7 @@ class ChatService:
 
         :param chat_id: ID of the chat
         :param db: Database session
-        :return: A list of interactions
+        :return: A dictionary containing chat interactions if successful, None otherwise
         """
         try:
             response = self.chat_repo.get_chat(chat_id, db)
@@ -119,6 +124,7 @@ class ChatService:
 
         :param chat_id: ID of the chat
         :param user_id: ID of the user
+        :param db: Database session
         :return: True if the user owns the chat, False otherwise
         """
         try:
@@ -135,7 +141,7 @@ class ChatService:
 
         :param user_id: ID of the user
         :param db: Database session
-        :return: A list of chats
+        :return: A list of chats belonging to the user
         """
         try:
             return self.chat_repo.list_user_chats(user_id, db)
@@ -165,19 +171,26 @@ class ChatService:
         Get a response based on the message.
 
         :param message: Message to get a response for
-        :return: Response
+        :return: Response message
         """
-        for key in predefined_responses.keys():
-            if key.lower() in message.strip().lower():
-                return predefined_responses[key]
-        return "Sorry, I don't understand that. Can you ask something else?"
+        try:
+            for key in predefined_responses.keys():
+                if key.lower() in message.strip().lower():
+                    return predefined_responses[key]
+            return "Sorry, I don't understand that. Can you ask something else?"
+        except Exception as e:
+            logging.error(f"Error generating response for message '{message}': {e}")
+            return "An error occurred while generating a response. Please try again."
 
     @staticmethod
     def get_suggestions() -> List[str]:
         """
-        Get a list of suggestions based on the message.
+        Get a list of suggestions for the user.
 
-        :param message: Message to get suggestions for
         :return: List of suggestions
         """
-        return random.sample(list(predefined_responses.keys()), 3)
+        try:
+            return random.sample(list(predefined_responses.keys()), 3)
+        except ValueError as e:
+            logging.error(f"Error generating suggestions: {e}")
+            return ["Can you try rephrasing that?", "What else can I help with?", "Do you need more information?"]
