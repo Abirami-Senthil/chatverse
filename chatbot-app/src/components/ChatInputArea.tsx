@@ -84,6 +84,7 @@ export const ChatInputArea: React.FC<{
                     <button
                         onClick={handleEditSave}
                         className="text-green-600 text-xs"
+                        aria-label="Save edited message"
                     >
                         <FiCheck size={24} />
                     </button>
