@@ -18,7 +18,9 @@ logging.basicConfig(level=logging.ERROR)
 # Constants
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 GREETING_RESPONSE = "Hello! How can I assist you today?"
-USER_NOT_ALLOWED = "You do not have permission to access this chat."
+USER_NOT_ALLOWED = "You do not have permission to edit messages in this chat."
+USER_NOT_ALLOWED_CHAT = "You do not have permission to access this chat."
+USER_NOT_ALLOWED_DELETE = "You do not have permission to delete messages in this chat."
 
 # Set up a test database
 engine = create_engine(
@@ -211,13 +213,13 @@ def test_user_ownership(create_user_and_get_token):
     headers_user_2 = {"Authorization": f"Bearer {token_user_2}"}
     response = client.get(f"/chat/{chat_id}", headers=headers_user_2)
     assert response.status_code == 403
-    assert response.json()["detail"] == USER_NOT_ALLOWED
+    assert response.json()["detail"] == USER_NOT_ALLOWED_CHAT
 
     response = client.post(
         f"/chat/{chat_id}/message", json={"message": "hello"}, headers=headers_user_2
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == USER_NOT_ALLOWED
+    assert response.json()["detail"] == USER_NOT_ALLOWED_CHAT
 
     response = client.patch(
         f"/chat/{chat_id}/message/{create_uuid()}", json={"message": "edit"}, headers=headers_user_2
@@ -229,7 +231,7 @@ def test_user_ownership(create_user_and_get_token):
         f"/chat/{chat_id}/message/{create_uuid()}", headers=headers_user_2
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == USER_NOT_ALLOWED
+    assert response.json()["detail"] == USER_NOT_ALLOWED_DELETE
 
 def test_list_user_chats(create_user_and_get_token):
     """
