@@ -68,13 +68,13 @@ class AuthService:
             raise InternalServerException("Error verifying password")
 
     def create_access_token(
-        self, data: dict, expires_delta: timedelta = timedelta(hours=24)
+        self, data: dict, expires_delta: timedelta = timedelta(days=7)
     ) -> str:
         """
         Create a JWT access token.
 
         :param data: The data to encode in the token
-        :param expires_delta: The expiration time for the token (default: 24 hours)
+        :param expires_delta: The expiration time for the token (default: 7 days)
         :return: The encoded JWT token
         :raises InternalServerException: If there's an error creating the token
         """

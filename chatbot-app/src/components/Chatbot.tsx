@@ -51,6 +51,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isOpen, toggleChat }) => {
           <ChatWindow toggleChat={toggleChat} />
         </div>
       )}
+
+      {/* Main page content */}
+      {!isOpen && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Chatverse!</h1>
+          <p className="text-lg text-gray-600 mb-8">Discover a new way to interact. Click on the blue chat icon to get started and chat with our AI assistant, Abi!</p>
+          <p className="text-lg text-blue-600 font-semibold">Click the chat icon in the bottom-right corner to begin your journey!</p>
+        </div>
+      )}
     </div>
   );
 };
