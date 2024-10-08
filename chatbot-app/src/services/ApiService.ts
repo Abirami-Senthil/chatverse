@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { AuthResponse, AuthError, CreateChatResponse, ChatMessageResponse, Interaction, ChatInfo, GetChatResponse, FieldError, } from '../types/api';
+import { AuthResponse, AuthError, CreateChatResponse, Interaction, ChatInfo, GetChatResponse, FieldError, } from '../types/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
