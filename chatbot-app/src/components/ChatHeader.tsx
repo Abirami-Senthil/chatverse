@@ -1,5 +1,6 @@
 import { BiDockLeft, BiDockRight } from "react-icons/bi";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
+import { TbLogout2 } from "react-icons/tb";
 
 /**
  * ChatHeader Component
@@ -11,7 +12,8 @@ export const ChatHeader: React.FC<{
     isPinned: boolean; // Determines if the chat window is pinned to a specific side
     togglePin: () => void; // Function to handle pinning/unpinning the chat window
     toggleChat: () => void; // Function to handle opening/closing the chat window
-}> = ({ isExpanded, toggleResize, isPinned, togglePin, toggleChat }) => (
+    handleLogout: () => void; // Function to handle logout
+}> = ({ isExpanded, toggleResize, isPinned, togglePin, toggleChat, handleLogout }) => (
     <div className="flex flex-col items-center justify-center p-4 mt-3 mr-2 ml-2 bg-white rounded-t-lg relative">
         {/* Avatar image */}
         <img
@@ -36,9 +38,14 @@ export const ChatHeader: React.FC<{
             </button>
         </div>
 
-        {/* Button to close the chat window */}
-        <button className="text-gray-500 absolute top-2 right-2" onClick={toggleChat} aria-label="Close chat">
-            <FiX size={20} />
-        </button>
+        {/* Control buttons for logout and close the chat window */}
+        <div className="absolute top-2 right-2 flex space-x-2">
+            <button className="text-gray-500 hover:text-gray-800" onClick={handleLogout} aria-label="Logout">
+                <TbLogout2 size={20} />
+            </button>
+            <button className="text-gray-500 hover:text-gray-800" onClick={toggleChat} aria-label="Close chat">
+                <FiX size={20} />
+            </button>
+        </div>
     </div>
 );

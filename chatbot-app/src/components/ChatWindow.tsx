@@ -69,6 +69,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
   };
 
   /**
+   * Handles logout by clearing the authentication state and local storage.
+   */
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('authToken');
+    setChats([]);
+    setSelectedChat('');
+    setMessages([]);
+    setIsEditing({ index: null, text: '', interactionId: "" });
+    setIsExpanded(false);
+    setIsPinned(false);
+  };
+
+  /**
    * useEffect to fetch messages for the selected chat.
    * This runs every time a new chat is selected.
    */
@@ -307,6 +321,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         isPinned={isPinned}
         togglePin={togglePin}
         toggleChat={toggleChat}
+        handleLogout={handleLogout}
       />
       <ChatMessages
         messages={messages}
