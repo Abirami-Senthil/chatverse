@@ -133,9 +133,7 @@ export const ApiService = {
   createChat: async (chatName: string): Promise<ApiResponse<CreateChatResponse>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.get<CreateChatResponse>(`/chats/init`, {
-        params: { chat_name: chatName }
-      });
+      const response = await axiosInstance!.post<CreateChatResponse>(`/chats/init?chat_name=${chatName}`);
       return response.data;
     } catch (error) {
       handleApiError(error);

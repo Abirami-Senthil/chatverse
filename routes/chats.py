@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from config import LOG_LEVEL
 from repository.database import User
 from services.chat_service import ChatService
@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 chats_router = APIRouter()
 
 
-@chats_router.get("/init")
+@chats_router.post("/init")
 async def create_chat(
-    chat_name: str,
+    chat_name: str = Query(...),
     chat_service: ChatService = Depends(ChatService),
     current_user: User = Depends(AuthService.get_current_user),
 ) -> Dict:

@@ -55,7 +55,7 @@ def create_chat(create_user_and_get_token):
     with TestingSessionLocal() as db:
         try:
             headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
-            response = client.get(
+            response = client.post(
                 f"/chats/init?chat_name={create_uuid()[:10]}", headers=headers
             )
             assert response.status_code == 200, "Failed to create chat"
@@ -108,7 +108,7 @@ def test_create_chat(create_user_and_get_token):
     Test creating a new chat and verifying the default interaction.
     """
     headers = {"Authorization": f"Bearer {create_user_and_get_token}"}
-    response = client.get(
+    response = client.post(
         f"/chats/init?chat_name={create_uuid()[:10]}", headers=headers
     )
     assert response.status_code == 200, "Failed to create chat"
@@ -243,7 +243,7 @@ def test_user_ownership(create_user_and_get_token):
     headers_user_1 = {"Authorization": f"Bearer {create_user_and_get_token}"}
 
     # Create chat for user 1
-    response = client.get(
+    response = client.post(
         f"/chats/init?chat_name={create_uuid()[:10]}", headers=headers_user_1
     )
     assert response.status_code == 200, "Failed to create chat for user 1"
@@ -303,7 +303,7 @@ def test_list_user_chats(create_user_and_get_token):
     # Create multiple chats
     chat_names = [create_uuid()[:10] for _ in range(3)]
     for chat_name in chat_names:
-        response = client.get(f"/chats/init?chat_name={chat_name}", headers=headers)
+        response = client.post(f"/chats/init?chat_name={chat_name}", headers=headers)
         assert response.status_code == 200, f"Failed to create chat: {chat_name}"
 
     # List all chats for the user
