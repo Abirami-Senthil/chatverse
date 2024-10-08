@@ -1,37 +1,26 @@
-FROM python:3.12-slim
-
-# Set the working directory in the container
-WORKDIR /app
-
-# Install Node.js
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_current.x | bash - && \
-    apt-get install -y nodejs
-
-# Copy the current directory contents into the container at /app
-COPY . /app
-
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# API Port
-EXPOSE 8000
-# Frontend Port
-EXPOSE 3000
-
-ENV JWT_SECRET_KEY=your_secret_key
-
-# Install Node.js dependencies
+# Stage 1: Build the frontend
+FROM node:20 AS frontend-builder
 WORKDIR /app/chatbot-app
+COPY chatbot-app/package*.json ./
 RUN npm install
-RUN npm install -g serve
-
-# Build the Node.js application
+COPY chatbot-app/ ./
+ENV REACT_APP_API_BASE_URL=http://localhost:${PORT:-3000}
 RUN npm run build
 
-# Set the working directory back to /app
-WORKDIR /app
+# Stage 2: Build the final image with Python and Node.js
+FROM python:3.12-slim
 
-# Run the API and the frontend
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 & npx serve -s chatbot-app/build -l 3000"]
+# Install Python and dependencies
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV FRONTEND_BUILD_OUTPUT_DIR=/app/chatbot-app/build
+# Copy the frontend build into the FastAPI app
+COPY --from=frontend-builder /app/chatbot-app/build $FRONTEND_BUILD_OUTPUT_DIR
+# Copy the rest of the FastAPI app
+COPY . .
+
+EXPOSE ${PORT:-3000}
+
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-3000}

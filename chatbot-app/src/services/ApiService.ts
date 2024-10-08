@@ -218,7 +218,7 @@ export const ApiService = {
   listChats: async (): Promise<ApiResponse<ChatInfo[]>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.get<ChatInfo[]>('/chats');
+      const response = await axiosInstance!.get<ChatInfo[]>('/chats/');
       return response.data;
     } catch (error) {
       handleApiError(error);

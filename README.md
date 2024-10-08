@@ -7,7 +7,7 @@ From the repository root, run the following commands:
 
 ```bash
 docker build -t chatbot .
-docker run -p 8000:8000 -p 3000:3000 chatbot
+docker run -p 3000:3000 chatbot
 ```
 
 
