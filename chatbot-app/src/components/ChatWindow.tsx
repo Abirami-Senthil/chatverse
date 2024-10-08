@@ -39,7 +39,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ toggleChat }) => {
         try {
           const chatList = await chatController.listChats();
           if (chatList.length === 0) {
-            const newChat = await chatController.createChat("1");
+            const newChat = await chatController.createChat("Welcome");
             setChats([{ chat_id: newChat.chat_id, chat_name: newChat.chat_name }]);
             setMessages([{ sender: 'bot', text: newChat.interaction.response, interactionId: newChat.interaction.interaction_id, suggestions: [] }]);
             setSelectedChat(newChat.chat_id);

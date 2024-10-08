@@ -91,7 +91,7 @@ export const ApiService = {
    */
   register: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/register`, { username, password });
+      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/register`, { username, password });
       axiosInstance = createAxiosInstance(response.data.access_token);
       return response.data;
     } catch (error) {
@@ -108,7 +108,7 @@ export const ApiService = {
    */
   login: async (username: string, password: string): Promise<ApiResponse<AuthResponse>> => {
     try {
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/login`, { username, password });
+      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/login`, { username, password });
       axiosInstance = createAxiosInstance(response.data.access_token);
       return response.data;
     } catch (error) {
@@ -133,7 +133,7 @@ export const ApiService = {
   createChat: async (chatName: string): Promise<ApiResponse<CreateChatResponse>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.get<CreateChatResponse>(`/chat/init`, {
+      const response = await axiosInstance!.get<CreateChatResponse>(`/chats/init`, {
         params: { chat_name: chatName }
       });
       return response.data;
@@ -152,7 +152,7 @@ export const ApiService = {
   addMessage: async (chatId: string, message: string): Promise<ApiResponse<Interaction>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.post<Interaction>(`/chat/${chatId}/message`, { message });
+      const response = await axiosInstance!.post<Interaction>(`/chats/${chatId}/messages`, { message });
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -170,7 +170,7 @@ export const ApiService = {
   editMessage: async (chatId: string, interactionId: string, message: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.patch<Interaction[]>(`/chat/${chatId}/message/${interactionId}`, { message });
+      const response = await axiosInstance!.patch<Interaction[]>(`/chats/${chatId}/messages/${interactionId}`, { message });
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -187,7 +187,7 @@ export const ApiService = {
   deleteMessage: async (chatId: string, interactionId: string): Promise<ApiResponse<Interaction[]>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.delete<Interaction[]>(`/chat/${chatId}/message/${interactionId}`);
+      const response = await axiosInstance!.delete<Interaction[]>(`/chats/${chatId}/messages/${interactionId}`);
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -203,7 +203,7 @@ export const ApiService = {
   loadChat: async (chatId: string): Promise<ApiResponse<GetChatResponse>> => {
     try {
       checkAuthentication();
-      const response = await axiosInstance!.get<GetChatResponse>(`/chat/${chatId}`);
+      const response = await axiosInstance!.get<GetChatResponse>(`/chats/${chatId}`);
       return response.data;
     } catch (error) {
       handleApiError(error);

@@ -20,6 +20,8 @@ EXPOSE 8000
 # Frontend Port
 EXPOSE 3000
 
+ENV JWT_SECRET_KEY=your_secret_key
+
 # Install Node.js dependencies
 WORKDIR /app/chatbot-app
 RUN npm install

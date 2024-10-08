@@ -1,10 +1,16 @@
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from database import Interaction, Chat
+from config import LOG_LEVEL
+from repository.database import Interaction, Chat, get_session_local
 from datetime import datetime, timezone
 from typing import Dict, List, Union, Optional
 import uuid
 import logging
+
+# Configure logging
+logging.basicConfig(level=LOG_LEVEL)
+logger = logging.getLogger(__name__)
 
 # In-memory cache for recently used chats
 chat_cache: Dict[str, Dict] = {}
@@ -12,9 +18,11 @@ user_chats_cache: Dict[str, List[Dict[str, str]]] = {}
 
 
 class ChatRepository:
-    @staticmethod
+    def __init__(self, db: Session = Depends(get_session_local)):
+        self.db = db
+
     def create_interaction(
-        message: Optional[str], response: str, interaction_id: str, index: int
+        self, message: Optional[str], response: str, interaction_id: str, index: int
     ) -> Dict[str, Union[str, int, datetime]]:
         """
         Create an interaction dictionary.
@@ -33,14 +41,12 @@ class ChatRepository:
             "timestamp": datetime.now(timezone.utc),
         }
 
-    @staticmethod
     def create_chat(
-        chat_name: str, greeting: str, db: Session, user_id: str
+        self, chat_name: str, greeting: str, user_id: str
     ) -> Optional[dict]:
         """
         Create a new chat and store it in the database.
 
-        :param db: Database session
         :param user_id: ID of the user creating the chat
         :param chat_name: Name of the chat
         :param greeting: Initial greeting message
@@ -50,7 +56,7 @@ class ChatRepository:
             chat_id = str(uuid.uuid4())
             interaction_id = str(uuid.uuid4())
             index = 0
-            interaction = ChatRepository.create_interaction(
+            interaction = self.create_interaction(
                 message=None,
                 response=greeting,
                 interaction_id=interaction_id,
@@ -59,9 +65,7 @@ class ChatRepository:
 
             # Store chat in SQLite database
             db_chat = Chat(id=chat_id, user_id=user_id, name=chat_name)
-            db.add(db_chat)
-            db.commit()
-            db.refresh(db_chat)
+            self.db.add(db_chat)
 
             # Store interaction in SQLite database
             db_interaction = Interaction(
@@ -71,9 +75,8 @@ class ChatRepository:
                 message=None,
                 response=greeting,
             )
-            db.add(db_interaction)
-            db.commit()
-            db.refresh(db_interaction)
+            self.db.add(db_interaction)
+            self.db.commit()
 
             chat_data = {
                 "user_id": user_id,
@@ -100,24 +103,22 @@ class ChatRepository:
                 "chat_name": chat_name,
             }
         except SQLAlchemyError as e:
-            logging.error(f"Error creating chat for user {user_id}: {e}")
-            db.rollback()
+            logger.error(f"Error creating chat for user {user_id}: {e}")
+            self.db.rollback()
             return None
 
-    @staticmethod
     def load_chat_from_db(
-        chat_id: str, db: Session
+        self, chat_id: str
     ) -> Optional[Dict[str, Union[str, List[Dict]]]]:
         """
         Load chat interactions from the database.
 
         :param chat_id: ID of the chat
-        :param db: Database session
         :return: Dictionary of chat data if found, None otherwise
         """
         try:
             interactions = (
-                db.query(Interaction)
+                self.db.query(Interaction)
                 .filter(Interaction.chat_id == chat_id)
                 .order_by(Interaction.index)
                 .all()
@@ -126,7 +127,7 @@ class ChatRepository:
             if not interactions:
                 return None
 
-            chat = db.query(Chat).filter(Chat.id == chat_id).first()
+            chat = self.db.query(Chat).filter(Chat.id == chat_id).first()
             if not chat:
                 return None
 
@@ -149,48 +150,42 @@ class ChatRepository:
             chat_cache[chat_id] = chat_data
             return chat_data
         except SQLAlchemyError as e:
-            logging.error(f"Error loading chat {chat_id} from database: {e}")
+            logger.error(f"Error loading chat {chat_id} from database: {e}")
             return None
 
-    @staticmethod
-    def verify_user_ownership(chat_id: str, user_id: str, db: Session) -> bool:
+    def verify_user_ownership(self, chat_id: str, user_id: str) -> bool:
         """
         Verify if the given user is the owner of the chat.
 
         :param chat_id: ID of the chat
         :param user_id: ID of the user
-        :param db: Database session
         :return: True if the user owns the chat, False otherwise
         """
         if chat_id not in chat_cache:
-            chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+            chat_data = self.load_chat_from_db(chat_id)
             if chat_data is None:
                 return False
             chat_cache[chat_id] = chat_data
         return chat_cache[chat_id]["user_id"] == user_id
 
-    @staticmethod
-    def add_message(
-        chat_id: str, message: str, response: str, db: Session
-    ) -> Optional[Dict]:
+    def add_message(self, chat_id: str, message: str, response: str) -> Optional[Dict]:
         """
         Add a message to a chat.
 
         :param chat_id: ID of the chat
         :param message: Message to add
-        :param db: Database session
         :param response: Response to add
         :return: Dictionary of the new interaction if successful, None otherwise
         """
         try:
             if chat_id not in chat_cache:
-                chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+                chat_data = self.load_chat_from_db(chat_id)
                 if chat_data is None:
                     return None
 
             new_index = len(chat_cache[chat_id]["interactions"])
             interaction_id = str(uuid.uuid4())
-            interaction = ChatRepository.create_interaction(
+            interaction = self.create_interaction(
                 message=message,
                 response=response,
                 interaction_id=interaction_id,
@@ -204,21 +199,19 @@ class ChatRepository:
                 message=message,
                 response=response,
             )
-            db.add(db_interaction)
-            db.commit()
-            db.refresh(db_interaction)
+            self.db.add(db_interaction)
+            self.db.commit()
 
             chat_cache[chat_id]["interactions"].append(interaction)
 
             return interaction
         except SQLAlchemyError as e:
-            logging.error(f"Error adding message to chat {chat_id}: {e}")
-            db.rollback()
+            logger.error(f"Error adding message to chat {chat_id}: {e}")
+            self.db.rollback()
             return None
 
-    @staticmethod
     def edit_message(
-        interaction_id: str, new_message: str, new_response: str, db: Session
+        self, interaction_id: str, new_message: str, new_response: str
     ) -> Optional[List[Dict]]:
         """
         Edit a message within a chat.
@@ -226,12 +219,13 @@ class ChatRepository:
         :param interaction_id: ID of the interaction to edit
         :param new_message: New message content
         :param new_response: New response content
-        :param db: Database session
         :return: List of remaining interactions in the chat if successful, None otherwise
         """
         try:
             interaction = (
-                db.query(Interaction).filter(Interaction.id == interaction_id).first()
+                self.db.query(Interaction)
+                .filter(Interaction.id == interaction_id)
+                .first()
             )
             if not interaction:
                 return None
@@ -243,12 +237,11 @@ class ChatRepository:
             chat_id = interaction.chat_id
 
             # Delete subsequent interactions
-            db.query(Interaction).filter(
+            self.db.query(Interaction).filter(
                 Interaction.chat_id == chat_id,
                 Interaction.index > updated_interaction_index,
             ).delete()
-            db.commit()
-            db.refresh(interaction)
+            self.db.commit()
 
             if chat_id in chat_cache:
                 interactions = chat_cache[chat_id]["interactions"]
@@ -260,25 +253,25 @@ class ChatRepository:
                         break
                 return chat_cache[chat_id]["interactions"]
 
-            chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+            chat_data = self.load_chat_from_db(chat_id)
             return chat_data["interactions"] if chat_data else None
         except SQLAlchemyError as e:
-            logging.error(f"Error editing message {interaction_id}: {e}")
-            db.rollback()
+            logger.error(f"Error editing message {interaction_id}: {e}")
+            self.db.rollback()
             return None
 
-    @staticmethod
-    def delete_message(interaction_id: str, db: Session) -> Optional[List[Dict]]:
+    def delete_message(self, interaction_id: str) -> Optional[List[Dict]]:
         """
         Delete a message and all subsequent messages in a chat.
 
         :param interaction_id: ID of the interaction to delete
-        :param db: Database session
         :return: List of remaining interactions if successful, None otherwise
         """
         try:
             interaction = (
-                db.query(Interaction).filter(Interaction.id == interaction_id).first()
+                self.db.query(Interaction)
+                .filter(Interaction.id == interaction_id)
+                .first()
             )
             if not interaction:
                 return None
@@ -287,10 +280,10 @@ class ChatRepository:
             index_to_delete = interaction.index
 
             # Delete interactions from the database
-            db.query(Interaction).filter(
+            self.db.query(Interaction).filter(
                 Interaction.chat_id == chat_id, Interaction.index >= index_to_delete
             ).delete()
-            db.commit()
+            self.db.commit()
 
             if chat_id in chat_cache:
                 interactions = chat_cache[chat_id]["interactions"]
@@ -300,7 +293,7 @@ class ChatRepository:
                 return chat_cache[chat_id]["interactions"]
 
             remaining_interactions = (
-                db.query(Interaction)
+                self.db.query(Interaction)
                 .filter(Interaction.chat_id == chat_id)
                 .order_by(Interaction.index)
                 .all()
@@ -316,47 +309,43 @@ class ChatRepository:
                 for i in remaining_interactions
             ]
         except SQLAlchemyError as e:
-            logging.error(f"Error deleting message {interaction_id}: {e}")
-            db.rollback()
+            logger.error(f"Error deleting message {interaction_id}: {e}")
+            self.db.rollback()
             return None
 
-    @staticmethod
-    def list_user_chats(user_id: str, db: Session) -> Optional[List[Dict[str, str]]]:
+    def list_user_chats(self, user_id: str) -> Optional[List[Dict[str, str]]]:
         """
         List all chats linked to a specific user.
 
         :param user_id: ID of the user
-        :param db: Database session
         :return: List of dictionaries containing chat ID and chat name if successful, None otherwise
         """
         try:
             if user_id in user_chats_cache:
                 return user_chats_cache[user_id]
 
-            chats = db.query(Chat).filter(Chat.user_id == user_id).all()
+            chats = self.db.query(Chat).filter(Chat.user_id == user_id).all()
             user_chats = [
                 {"chat_id": chat.id, "chat_name": chat.name} for chat in chats
             ]
             user_chats_cache[user_id] = user_chats
             return user_chats
         except SQLAlchemyError as e:
-            logging.error(f"Error listing chats for user {user_id}: {e}")
+            logger.error(f"Error listing chats for user {user_id}: {e}")
             return None
 
-    @staticmethod
-    def get_chat(chat_id: str, db: Session) -> Optional[Dict[str, Union[str, List[Dict]]]]:
+    def get_chat(self, chat_id: str) -> Optional[Dict[str, Union[str, List[Dict]]]]:
         """
         Get chat interactions by chat ID. If the chat exists in the cache, return it.
         Otherwise, fetch it from the database, cache it, and return it.
 
         :param chat_id: ID of the chat
-        :param db: Database session
         :return: Dictionary of chat data if found, None otherwise
         """
         if chat_id in chat_cache:
             return chat_cache[chat_id]
 
-        chat_data = ChatRepository.load_chat_from_db(chat_id, db)
+        chat_data = self.load_chat_from_db(chat_id)
         if chat_data:
             chat_cache[chat_id] = chat_data
         return chat_data

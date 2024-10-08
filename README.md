@@ -3,6 +3,7 @@
 ## Running using Docker (Recommended)
 
 The project is designed to run using Docker, which simplifies the setup process and ensures consistent dependencies across different environments.
+From the repository root, run the following commands:
 
 ```bash
 docker build -t chatbot .
@@ -14,12 +15,15 @@ Alternatively, you can run the project without Docker by setting up the Python e
 
 ## Setting up the Python Environment for the API
 
-First, create a virtual environment to isolate the project dependencies. Run the following command in your terminal:
+First, create a virtual environment to isolate the project dependencies. From the repository root, run the following command in your terminal:
 
 ```bash
 python -m venv venv-chatbot
 source venv-chatbot/bin/activate  # On Windows use `venv-chatbot\Scripts\activate`
 pip install -r requirements.txt
+
+# Setup the required environment variable
+echo "JWT_SECRET_KEY=your_secret_key" >> .env
 
 # Start the app with hot-reload
 uvicorn main:app --reload

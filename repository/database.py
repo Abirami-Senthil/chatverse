@@ -11,11 +11,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from sqlalchemy.exc import SQLAlchemyError
-from utils.uuid_utis import create_uuid
+from config import LOG_LEVEL
+from utils import create_uuid
 import logging
+from typing import Generator
 
 # Configure logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=LOG_LEVEL)
+logger = logging.getLogger(__name__)
 
 # Constants
 DATABASE_URL = "sqlite:///./chats.db"
@@ -24,23 +27,37 @@ USER_TABLE_NAME = "users"
 INTERACTION_TABLE_NAME = "interactions"
 
 # Set up the database engine
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+try:
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+except SQLAlchemyError as e:
+    logger.error(f"Error setting up database engine: {e}")
+    raise
 
-def get_session_local():
+
+def get_session_local() -> Generator:
     """
     Provide a transactional scope around a series of operations.
 
     Yields:
-        db (SessionLocal): A database session object.
+        SessionLocal: A database session object.
+
+    Raises:
+        SQLAlchemyError: If there's an issue with the database session.
     """
     db = SessionLocal()
     try:
         yield db
+    except SQLAlchemyError as e:
+        logger.error(f"Database session error: {e}")
+        db.rollback()
+        raise
     finally:
         db.close()
 
+
 Base = declarative_base()
+
 
 class Interaction(Base):
     """
@@ -54,16 +71,16 @@ class Interaction(Base):
         response (str): Chatbot response.
         timestamp (datetime): Timestamp of when the interaction occurred.
     """
+
     __tablename__ = INTERACTION_TABLE_NAME
 
-    id = Column(String, primary_key=True, default=create_uuid)  # interaction_id as UUID
-    chat_id = Column(
-        String, ForeignKey(f"{CHAT_TABLE_NAME}.id"), index=True
-    )  # chat_id as UUID
-    index = Column(Integer)  # Index of the interaction in the chat
-    message = Column(Text)  # User's message
-    response = Column(Text)  # Bot's response
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # Timestamp
+    id = Column(String, primary_key=True, default=create_uuid)
+    chat_id = Column(String, ForeignKey(f"{CHAT_TABLE_NAME}.id"), index=True)
+    index = Column(Integer)
+    message = Column(Text)
+    response = Column(Text)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 
 class User(Base):
     """
@@ -75,16 +92,16 @@ class User(Base):
         hashed_password (str): User's hashed password for authentication.
         created_at (datetime): Timestamp when the user was created.
     """
+
     __tablename__ = USER_TABLE_NAME
 
-    id = Column(String, primary_key=True, default=create_uuid)  # User ID as UUID
-    username = Column(
-        String, unique=True, nullable=False, index=True
-    )  # Unique username
-    hashed_password = Column(String, nullable=False)  # Hashed password
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # Timestamp
+    id = Column(String, primary_key=True, default=create_uuid)
+    username = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (UniqueConstraint("username", name="unique_username_constraint"),)
+
 
 class Chat(Base):
     """
@@ -96,18 +113,22 @@ class Chat(Base):
         name (str): Name of the chat.
         user (User): Relationship to the user model.
     """
+
     __tablename__ = CHAT_TABLE_NAME
 
-    id = Column(String, primary_key=True, default=create_uuid)  # Chat ID as UUID
-    user_id = Column(
-        String, ForeignKey(f"{USER_TABLE_NAME}.id"), nullable=False
-    )  # User ID as UUID
-    name = Column(String, nullable=False)  # Chat name
+    id = Column(String, primary_key=True, default=create_uuid)
+    user_id = Column(String, ForeignKey(f"{USER_TABLE_NAME}.id"), nullable=False)
+    name = Column(String, nullable=False)
 
-    user = relationship("User")  # Relationship to user
+    user = relationship("User", back_populates="chats")
+
+
+# Add back-reference to User model
+User.chats = relationship("Chat", order_by=Chat.id, back_populates="user")
 
 # Create the database tables with error handling
 try:
     Base.metadata.create_all(bind=engine)
 except SQLAlchemyError as e:
-    logging.error(f"Error creating database tables: {e}")
+    logger.error(f"Error creating database tables: {e}")
+    raise
